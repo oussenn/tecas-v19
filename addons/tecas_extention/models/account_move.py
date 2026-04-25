@@ -42,7 +42,7 @@ class AccountMove(models.Model):
                     'name': "Net à Payer",
                     'formatted_amount': formatLang(self.env, net_to_pay, currency_obj=move.currency_id),
                 }
-                move.tax_totals = tax_totals
+                move._cache['tax_totals'] = tax_totals
 
     @api.depends('amount_total', 'move_type')
     def _compute_stamp_duty(self):
