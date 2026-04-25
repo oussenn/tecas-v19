@@ -27,13 +27,14 @@ class AccountMove(models.Model):
         store=True,
     )
 
+    @api.depends('cash', 'amount_total', 'currency_id', 'move_type', 'line_ids')
     def _compute_tax_totals(self):
         super()._compute_tax_totals()
         for move in self:
             if move.is_invoice(include_receipts=True) and move.cash and move.tax_totals:
                 stamp_duty = move.amount_total * 0.0025
                 net_to_pay = move.amount_total + stamp_duty
-                tax_totals = dict(move.tax_totals)
+                tax_totals = move.tax_totals.copy()
                 tax_totals['stamp_duty'] = {
                     'name': "Frais de Timbre",
                     'formatted_amount': formatLang(self.env, stamp_duty, currency_obj=move.currency_id),
@@ -42,7 +43,7 @@ class AccountMove(models.Model):
                     'name': "Net à Payer",
                     'formatted_amount': formatLang(self.env, net_to_pay, currency_obj=move.currency_id),
                 }
-                move._cache['tax_totals'] = tax_totals
+                move.tax_totals = tax_totals
 
     @api.depends('amount_total', 'move_type')
     def _compute_stamp_duty(self):
