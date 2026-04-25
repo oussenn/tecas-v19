@@ -1,0 +1,32 @@
+<odoo>
+    <template id="document_tax_totals_inherit" inherit_id="account.document_tax_totals_template">
+        <xpath expr="//tr[@class='o_total']" position="after">
+            <t t-if="tax_totals and 'stamp_duty' in tax_totals">
+                <tr class="o_total">
+                    <td><strong t-out="tax_totals['stamp_duty']['name']"/></td>
+                    <td class="text-end">
+                        <span t-out="tax_totals['stamp_duty']['formatted_amount']"/>
+                    </td>
+                </tr>
+            </t>
+            <t t-if="tax_totals and 'net_to_pay' in tax_totals">
+                <tr>
+                    <td><strong t-out="tax_totals['net_to_pay']['name']"/></td>
+                    <td class="text-end">
+                        <span t-out="tax_totals['net_to_pay']['formatted_amount']"/>
+                    </td>
+                </tr>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="report_invoice_document_inherit" inherit_id="account.report_invoice_document">
+        <xpath expr="//p[@name='payment_communication']" position="before">
+            <t t-if="tax_totals and 'stamp_duty' in tax_totals">
+                <p class="text-muted">
+                    Droit de timbre payé sur états <br/> (décision n°_83 du 1_3_83)
+                </p>
+            </t>
+        </xpath>
+    </template>
+</odoo>

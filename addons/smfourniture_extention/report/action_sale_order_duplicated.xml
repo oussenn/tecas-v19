@@ -1,0 +1,27 @@
+<odoo>
+    <record id="action_sale_order_duplicated" model="ir.actions.report">
+        <field name="name">Bons de livraison</field>
+        <field name="model">sale.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">smfourniture_extention.report_sale_order_duplicated</field>
+        <field name="paperformat_id" ref="smfourniture_extention.paperformat_a5"/>
+    </record>
+
+    <record id="action_report_sale_order_to_invoice" model="ir.actions.report">
+        <field name="name">Situation Clients</field>
+        <field name="model">sale.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">smfourniture_extention.report_sale_order_to_invoice</field>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_type">report</field>
+    </record>
+    <record id="action_report_purchase_order_to_invoice" model="ir.actions.report">
+        <field name="name">Situation Fournisseurs</field>
+        <field name="model">purchase.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">smfourniture_extention.report_purchase_order_to_invoice</field>
+        <field name="binding_model_id" ref="purchase.model_purchase_order"/>
+        <field name="binding_type">report</field>
+    </record>
+
+</odoo>

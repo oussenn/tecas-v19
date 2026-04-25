@@ -1,0 +1,276 @@
+<odoo>
+    <record id="paperformat_a5" model="report.paperformat">
+        <field name="name">A5 Paper Format</field>
+        <field name="default" eval="False"/>
+        <field name="format">custom</field>
+        <field name="page_height">297</field> <!-- A5 height in mm -->
+        <field name="page_width">210</field> <!-- A5 width in mm -->
+        <field name="margin_top">1</field>
+        <field name="margin_bottom">1</field>
+        <field name="margin_left">1</field>
+        <field name="margin_right">1</field>
+        <field name="orientation">Landscape</field>
+    </record>
+
+    <template id="report_sale_order_duplicated">
+    <t t-call="web.html_container">
+        <t t-foreach="docs" t-as="doc">
+            <t t-call="web.external_layout">
+            <link href="https://fonts.googleapis.com/css2?family=Anta&amp;display=swap" rel="stylesheet"/>
+                <style type = "text/css">
+                        table, body, h1, h2, h3, th, td, tr, footer, thead {
+                            font-family: 'Anta', sans-serif;
+                            border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;
+                            border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;
+                        }
+                        .anta-font {
+                                font-family: 'Anta', sans-serif;
+                        }
+                </style>
+                <table style="width: 100%;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                    <tr style="border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                        <td style="width: 50%; vertical-align: top; padding: 10px;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white">
+                            <t t-set="company" t-value="doc.company_id"/>
+                            <table style="width: 100%;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white">
+                                <tr>
+                                    <td style="text-align: left; vertical-align: middle; padding: 5px;;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white">
+                                        <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" style="max-height: 100px;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;" alt="Logo"/>
+                                    </td>
+                                   <td style="text-align: center; vertical-align: middle; padding: 5px; font-size: 20px; font-weight: bold; text-decoration: underline;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                                        <t t-esc="doc.name"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="width: 60%;text-align: center; padding: 5px; font-size: 14px;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                                        <t t-set="company" t-value="doc.company_id"/>
+                                        <p style="margin: 0;"><strong>Address:</strong> <t t-esc="company.street"/> <t t-if="company.city">, <t t-esc="company.city"/></t></p>
+                                        <p style="margin: 0;"><strong>Tél:</strong> <t t-esc="company.phone"/></p>
+                                    </td>
+                                    <td style="text-align: left; padding: 5px; font-size: 14px;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                                    <h4 style="text-align: center; vertical-align: middle;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white">Bon de livraison</h4>
+                                    <p style="text-align: center;margin: 0; font-size: 12px; font-weight: bold; text-decoration: underline;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                                            N°: <t t-esc="doc.name"/>
+                                        </p>
+                                    </td>
+                                </tr>
+                                 <tr>
+                                    <!-- Client Name and Order Date -->
+                                    <td style="text-align: left; padding: 5px; font-size: 12px;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                                        <p style="margin: 0;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;"><strong>Client :  </strong> <t t-esc="doc.partner_id.name"/></p>
+                                    </td>
+                                    <!-- Client Name and Order Date -->
+                                    <td style="text-align: left; padding: 5px; font-size: 12px;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                                        <p style="margin: 0;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;"><strong>Date :  </strong><span t-field="doc.date_order" t-options='{"widget": "datetime", "format": "dd/MM/yyyy HH:mm"}'/></p>
+                                    </td>
+                                </tr>
+                                 <tr>
+                                    <!-- Client Name and Order Date -->
+                                    <td style="text-align: left; padding: 5px; font-size: 12px;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                                        <p style="margin: 0;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;"><strong>Modèle :  </strong></p>
+                                    </td>
+                                    <!-- Client Name and Order Date -->
+                                    <td style="text-align: left; padding: 5px; font-size: 12px;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                                        <p style="margin: 0;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;"><strong>Livreur :  </strong></p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                        <td style="width: 50%; vertical-align: top; padding: 10px;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                            <t t-set="company" t-value="doc.company_id"/>
+                            
+                            <!-- Inner Table for Logo and Sale Order Name -->
+                            <table style="width: 100%;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white">
+                                <tr>
+                                    <td style="text-align: left; vertical-align: middle; padding: 5px;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                                        <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" style="max-height: 100px;" alt="Logo"/>
+                                    </td>
+                                   <td style="text-align: center; vertical-align: middle; padding: 5px; font-size: 20px; font-weight: bold; text-decoration: underline;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                                        <t t-esc="doc.name"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="width: 60%;text-align: center; padding: 5px; font-size: 14px;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                                        <t t-set="company" t-value="doc.company_id"/>
+                                        <p style="margin: 0;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white"><strong>Address:</strong> <t t-esc="company.street"/> <t t-if="company.city">, <t t-esc="company.city"/></t></p>
+                                        <p style="margin: 0;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;"><strong>Tél:</strong> <t t-esc="company.phone"/></p>
+                                    </td>
+                                    <td style="text-align: left; padding: 5px; font-size: 14px;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                                    <h4 style="text-align: center; vertical-align: middle;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white">Bon de livraison</h4>
+                                    <p style="text-align: center;margin: 0; font-size: 12px; font-weight: bold; text-decoration: underline;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                                            N°: <t t-esc="doc.name"/>
+                                        </p>
+                                    </td>
+                                </tr>
+                                 <tr>
+                                    <!-- Client Name and Order Date -->
+                                    <td style="text-align: left; padding: 5px; font-size: 12px;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                                        <p style="margin: 0;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;"><strong>Client :  </strong> <t t-esc="doc.partner_id.name"/></p>
+                                    </td>
+                                    <!-- Client Name and Order Date -->
+                                    <td style="text-align: left; padding: 5px; font-size: 12px;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                                        <p style="margin: 0;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;"><strong>Date :  </strong><span t-field="doc.date_order" t-options='{"widget": "datetime", "format": "dd/MM/yyyy HH:mm"}'/></p>
+                                    </td>
+                                </tr>
+                                 <tr>
+                                    <!-- Client Name and Order Date -->
+                                    <td style="text-align: left; padding: 5px; font-size: 12px;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                                        <p style="margin: 0;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;"><strong>Modèle :  </strong></p>
+                                    </td>
+                                    <!-- Client Name and Order Date -->
+                                    <td style="text-align: left; padding: 5px; font-size: 12px;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                                        <p style="margin: 0;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;"><strong>Livreur :  </strong></p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 50%; vertical-align: top; padding: 10px;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                            <table style="width: 100%;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white">
+                                <thead>
+                                    <tr>
+                                        <th style="padding: 5px; font-size: 12px; font-weight: bold">
+                                            Quantité<br/><span style="font-size: 12px;">الكمية</span>
+                                        </th>
+                                        <!-- Désignation -->
+                                        <th style="padding: 5px; font-size: 12px;width: 50%; font-weight: bold">
+                                            Désignation<br/><span style="font-size: 12px;">التسمية</span>
+                                        </th>
+                                        <!-- Prix Unit -->
+                                        <th style="padding: 5px; font-size: 12px; font-weight: bold">
+                                            Prix Unit<br/><span style="font-size: 12px;">سعر الوحدة</span>
+                                        </th>
+                                        <!-- Total DH -->
+                                        <th style="padding: 5px; font-size: 12px; font-weight: bold">
+                                            TOTAL DH<br/><span style="font-size: 12px;">المجموع بالدرهم</span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-if="doc.order_line">
+                                        <tr t-foreach="doc.order_line" t-as="line">
+                                            <td style="text-align: center; vertical-align: middle"><t t-esc="line.product_uom_qty"/></td>
+                                            <td style="text-align: center; vertical-align: middle"><t t-esc="line.product_id.name"/></td>
+                                            <td style="text-align: center; vertical-align: middle"><t t-esc="line.price_unit"/></td>
+                                            <td style="text-align: center; vertical-align: middle"><t t-esc="line.price_subtotal"/></td>
+                                        </tr>
+                                    </t>
+                                    <t t-else="">
+                                        <tr>
+                                            <td colspan="3" style="text-align: center;">No products available</td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                                <tfoot  >
+                                <tr>
+                                    <td colspan="3" style="text-align: right; padding: 5px; font-size: 12px">
+                                        <strong>Total Hors Taxe (HT):</strong>
+                                    </td>
+                                    <td style="text-align: center; vertical-align: middle; padding: 5px; font-size: 12px">
+                                        <t t-esc="doc.amount_untaxed"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" style="text-align: right; vertical-align: middle; padding: 5px; font-size: 12px">
+                                        <strong>Total TVA:</strong><br/>
+                                    </td>
+                                    <td style="text-align: center; vertical-align: middle; padding: 5px; font-size: 12px">
+                                        <t t-esc="doc.amount_tax"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" style="text-align: right; padding: 5px; font-size: 12px;border-bottom-color: white;border-top-color: white;">
+                                        <strong>Total TTC:</strong><br/>
+                                    </td>
+                                    <td style="text-align: center; padding: 5px; font-size: 12px;border-bottom-color: white;border-top-color: white;">
+                                        <t t-esc="doc.amount_total"/>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                            </table>
+                        </td>
+                         <td style="width: 50%; vertical-align: top; padding: 10px;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                            <table style="width: 100%">
+                                <thead>
+                                    <tr>
+                                        <th style="padding: 5px; font-size: 12px; font-weight: bold;">
+                                            Quantité<br/><span style="font-size: 12px;">الكمية</span>
+                                        </th>
+                                        <!-- Désignation -->
+                                        <th style="padding: 5px; font-size: 12px;width: 50%; font-weight: bold">
+                                            Désignation<br/><span style="font-size: 12px;">التسمية</span>
+                                        </th>
+                                        <!-- Prix Unit -->
+                                        <th style="padding: 5px; font-size: 12px; font-weight: bold">
+                                            Prix Unit<br/><span style="font-size: 12px;">سعر الوحدة</span>
+                                        </th>
+                                        <!-- Total DH -->
+                                        <th style="padding: 5px; font-size: 12px; font-weight: bold">
+                                            TOTAL DH<br/><span style="font-size: 12px;">المجموع بالدرهم</span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-if="doc.order_line">
+                                        <tr t-foreach="doc.order_line" t-as="line">
+                                            <td style="text-align: center; vertical-align: middle"><t t-esc="line.product_uom_qty"/></td>
+                                            <td style="text-align: center; vertical-align: middle"><t t-esc="line.product_id.name"/></td>
+                                            <td style="text-align: center; vertical-align: middle"><t t-esc="line.price_unit"/></td>
+                                            <td style="text-align: center; vertical-align: middle"><t t-esc="line.price_subtotal"/></td>
+                                        </tr>
+                                    </t>
+                                    <t t-else="">
+                                        <tr>
+                                            <td colspan="3" style="text-align: center;">No products available</td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                                <tfoot>
+                                <tr>
+                                    <td colspan="3" style="text-align: right; padding: 5px; font-size: 12px">
+                                        <strong>Total Hors Taxe (HT):</strong>
+                                    </td>
+                                    <td style="text-align: center; vertical-align: middle; padding: 5px; font-size: 12px">
+                                        <t t-esc="doc.amount_untaxed"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" style="text-align: right; vertical-align: middle; padding: 5px; font-size: 12px">
+                                        <strong>Total TVA:</strong><br/>
+                                    </td>
+                                    <td style="text-align: center; vertical-align: middle; padding: 5px; font-size: 12px">
+                                        <t t-esc="doc.amount_tax"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" style="text-align: right; padding: 5px; font-size: 12px;border-bottom-color: white;border-top-color: white;">
+                                        <strong>Total TTC:</strong><br/>
+                                    </td>
+                                    <td style="text-align: center; padding: 5px; font-size: 12px;border-bottom-color: white;border-top-color: white;">
+                                        <t t-esc="doc.amount_total"/>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                            </table>
+                        </td>
+                        <tr>
+                            <td style="width: 50%; vertical-align: top; padding: 10px;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                                        <p style="margin: 0;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;"><strong>Obsérvation :  </strong></p>
+                            </td>
+                            <td style="width: 50%; vertical-align: top; padding: 10px;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;">
+                                        <p style="margin: 0;border-left: 0px;border-right: 0px;border-bottom: 0px;border-top: 0px;border-left-color: white;border-right-color: white;border-bottom-color: white;border-top-color: white;"><strong>Obsérvation :  </strong></p>
+                            </td>
+                        </tr>
+                    </tr>
+                </table>
+            </t>
+        </t>
+    </t>
+</template>
+
+
+
+
+
+
+</odoo>

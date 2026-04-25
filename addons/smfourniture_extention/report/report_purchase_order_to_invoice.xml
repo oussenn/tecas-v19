@@ -1,0 +1,87 @@
+<odoo>
+    <template id="report_purchase_order_to_invoice">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <link href="https://fonts.googleapis.com/css2?family=Anta&amp;display=swap" rel="stylesheet"/>
+                <style type="text/css">
+                    table, body, h1, h2, h3, th, td, tr, thead, div, p {
+                        font-family: 'Anta', sans-serif;
+                    }
+                    .anta-font {
+                        font-family: 'Anta', sans-serif;
+                    }
+                </style>
+                <div>
+                    <!-- Print Date -->
+                    <p style="text-align: right; font-weight: bold;">
+                        Tanger : <t t-esc="print_date"/>
+                    </p>
+
+                    <!-- Vendor Details -->
+                    <h2 style="text-align: center;">Compte Fournisseur : <t t-esc="vendor.name if vendor else docs[0].partner_id.name"/></h2>
+                    <p>Email: <t t-esc="vendor.email if vendor and vendor.email else 'N/A'"/></p>
+                    <p>Phone: <t t-esc="vendor.phone if vendor and vendor.phone else 'N/A'"/></p>
+
+                    <!-- Purchase Order and Return Details Table -->
+                    <table class="table table-sm table-bordered" style="width: 100%;text-align: center;">
+                        <thead>
+                            <tr>
+                                <th style="text-align: center;">Date</th>
+                                <th style="text-align: center;">N° BL</th>
+                                <th style="text-align: center;">Quantité</th>
+                                <th style="text-align: center;">Désignation</th>
+                                <th style="text-align: center;">PU</th>
+                                <th style="text-align: center;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Iterate through all lines, including returns -->
+                            <t t-foreach="purchase_lines_data" t-as="data">
+                                <tr>
+                                    <td style="text-align: center;"><t t-esc="data['date'].strftime('%d/%m/%Y') if data['date'] else ''"/></td>
+                                    <td style="text-align: center;"><t t-esc="data['order'].name"/></td>
+                                    <td style="text-align: center;"><t t-esc="data['quantity']"/></td>
+                                    <td style="text-align: center;"><t t-esc="data['description']"/></td>
+                                    <td style="text-align: center;"><t t-esc="data['price']" t-options="{'widget': 'float', 'precision': 2}"/></td>
+                                    <td style="text-align: center;"><t t-esc="data['subtotal']" t-options="{'widget': 'float', 'precision': 2}"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                        <t t-set="sum_untaxed" t-value="sum(data['subtotal'] for data in purchase_lines_data)"/>
+                        <t t-set="sum_tax" t-value="sum(data['tax_amount'] for data in purchase_lines_data)"/>
+                        <t t-set="sum_total" t-value="sum(data['subtotal'] + data['tax_amount'] for data in purchase_lines_data)"/>
+
+                        <tfoot>
+                            <!-- Total HT -->
+                            <tr>
+                                <td colspan="5" style="text-align: right; font-weight: bold; border-right-color: black;">Somme H.T:</td>
+                                <td style="text-align: center; border-left-color: black;">
+                                    <t t-esc="sum_untaxed" t-options="{'widget': 'float', 'precision': 2}"/>
+                                </td>
+                            </tr>
+
+                            <!-- Total Tax -->
+                            <tr>
+                                <td colspan="5" style="text-align: right; font-weight: bold; border-right-color: black;">T.V.A:</td>
+                                <td style="text-align: center; border-left-color: black;">
+                                    <t t-if="sum_tax == 0">Exonéré</t>
+                                    <t t-else="">
+                                        <t t-esc="sum_tax" t-options="{'widget': 'float', 'precision': 2}"/>
+                                    </t>
+                                </td>
+                            </tr>
+
+                            <!-- Total TTC -->
+                            <tr>
+                                <td colspan="5" style="text-align: right; font-weight: bold; border-right-color: black;">Somme T.T.C:</td>
+                                <td style="text-align: center;">
+                                    <t t-esc="sum_total" t-options="{'widget': 'float', 'precision': 2}"/>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

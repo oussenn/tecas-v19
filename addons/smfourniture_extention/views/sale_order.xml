@@ -1,0 +1,15 @@
+<odoo>
+    <record id="view_sale_order_form" model="ir.ui.view">
+        <field name="name">sale.order.form.view.invoice.report</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="%(smfourniture_extention.action_report_sale_order_to_invoice)d"
+                        string="Compte Client"
+                        type="action"
+                        class="btn-primary"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

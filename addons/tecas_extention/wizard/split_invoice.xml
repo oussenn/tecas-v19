@@ -1,0 +1,17 @@
+<odoo>
+    <record id="view_split_invoice_wizard_form" model="ir.ui.view">
+        <field name="name">split.invoice.wizard.form</field>
+        <field name="model">split.invoice.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Confirmation de scission de facture">
+                <group>
+                    <field name="message" readonly="1" />
+                </group>
+                <footer>
+                    <button string="Oui, scinder" type="object" name="action_split_invoice" class="btn-primary" />
+                    <button string="Non" type="object" name="action_cancel" class="btn-secondary" />
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

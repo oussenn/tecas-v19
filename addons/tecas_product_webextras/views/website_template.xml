@@ -1,0 +1,52 @@
+<odoo>
+  <template id="product_webextras_block" inherit_id="website_sale.product">
+    <!-- Insert custom info right after the long product description -->
+    <xpath expr="//div[@id='product_full_description']" position="after">
+
+      <!-- Web Description (with left/right margins) -->
+      <t t-if="product.web_description">
+        <section class="mt-4">
+          <div class="container px-3">
+            <h3 class="h5">Description technique</h3>
+            <div class="oe_structure">
+              <t t-out="product.web_description"/>
+            </div>
+          </div>
+        </section>
+      </t>
+
+      <!-- Tech sheet PDF (centered button) -->
+      <t t-if="product.tech_sheet_pdf">
+        <section class="mt-3">
+          <div class="container">
+            <div class="text-center">
+              <a class="btn btn-outline-primary"
+                 t-att-href="'/web/content?model=product.template&amp;id=%s&amp;field=tech_sheet_pdf&amp;filename=%s&amp;download=1' % (product.id, (product.tech_sheet_filename or 'fiche-technique.pdf'))">
+                Télécharger la fiche technique (PDF)
+              </a>
+            </div>
+          </div>
+        </section>
+      </t>
+
+      <!-- Image gallery (also with margins for consistency) -->
+      <t t-if="product.gallery_attachment_ids">
+        <section class="mt-4">
+          <div class="container">
+            <h3 class="h5">Galerie</h3>
+            <div class="row">
+              <t t-foreach="product.gallery_attachment_ids" t-as="img">
+                <div class="col-4 col-md-3 mb-3">
+                  <a t-att-href="'/web/content/%s?download=0' % img.id" target="_blank" rel="noopener">
+                    <img t-att-src="'/web/image/%s' % img.id" class="img-fluid rounded shadow-sm"/>
+                  </a>
+                </div>
+              </t>
+            </div>
+          </div>
+        </section>
+      </t>
+
+    </xpath>
+  </template>
+</odoo>

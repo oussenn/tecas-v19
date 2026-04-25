@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  tecas-db-19:
+    image: postgres:15
+    container_name: tecas-db-19
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: TECAS_PD_V19
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+    volumes:
+      - tecas-db-19-data:/var/lib/postgresql/data
+    networks:
+      - tecas-v19-net
+
+  tecas-web-19:
+    build: .
+    image: tecas-web:v19
+    container_name: tecas-web-19
+    restart: unless-stopped
+    depends_on:
+      - tecas-db-19
+    ports:
+      - "8069:8069"
+    volumes:
+      - tecas-filestore-19:/var/lib/odoo
+    environment:
+      HOST: tecas-db-19
+      USER: odoo
+      PASSWORD: odoo
+    networks:
+      - tecas-v19-net
+
+volumes:
+  tecas-db-19-data:
+  tecas-filestore-19:
+
+networks:
+  tecas-v19-net:
+    driver: bridge

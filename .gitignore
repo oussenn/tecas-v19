@@ -1,0 +1,5 @@
+﻿filestore_TECAS_PD.tar.gz
+filestore/
+*.log
+.env
+__pycache__/
