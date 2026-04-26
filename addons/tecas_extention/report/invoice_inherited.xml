@@ -1,26 +1,25 @@
 <odoo>
-    <template id="document_tax_totals_inherit" inherit_id="account.document_tax_totals_template">
-        <xpath expr="//tr[@class='o_total']" position="after">
-            <t t-if="o and o.cash">
+    <template id="report_invoice_document_inherit" inherit_id="account.report_invoice_document">
+        <xpath expr="//t[@t-if='o.tax_totals'][@t-call='account.document_tax_totals']" position="after">
+            <t t-if="o.cash">
                 <tr class="o_total">
                     <td><strong>Frais de Timbre</strong></td>
                     <td class="text-end">
-                        <span t-out="o.stamp_duty" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                        <span t-out="o.stamp_duty"
+                              t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                     </td>
                 </tr>
                 <tr>
                     <td><strong>Net à Payer</strong></td>
                     <td class="text-end">
-                        <span t-out="o.net_to_pay" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                        <span t-out="o.net_to_pay"
+                              t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                     </td>
                 </tr>
             </t>
         </xpath>
-    </template>
-
-    <template id="report_invoice_document_inherit" inherit_id="account.report_invoice_document">
         <xpath expr="//p[@name='payment_communication']" position="before">
-            <t t-if="o and o.cash">
+            <t t-if="o.cash">
                 <p class="text-muted">
                     Droit de timbre payé sur états <br/> (décision n°_83 du 1_3_83)
                 </p>
