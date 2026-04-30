@@ -1,37 +1,51 @@
 #!/bin/bash
-# Runs after every tecas-web-19 start to ensure DB fixes are applied
-echo "Applying startup fixes..."
+# TECAS v19 — Startup fixes, runs on every boot via cron
+# Idempotent: safe to run multiple times
+echo "[$(date)] Applying TECAS v19 startup fixes..."
 
-docker exec tecas-db-19 psql -U odoo19 -d tecas19 -c "
--- Fix product page: broken Studio itemprop/description view
-UPDATE ir_ui_view SET active = false 
-WHERE arch_db::text ILIKE '%itemprop%' 
-  AND arch_db::text ILIKE '%description%';
+docker exec tecas-db-19 psql -U odoo19 -d tecas19 <<'SQL'
 
--- Fix /shop crash
-UPDATE ir_ui_view SET active = false 
-WHERE arch_db::text ILIKE '%products_attributes_filters%';
+-- Speed: clear stuck modules
+UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to upgrade';
 
--- Delete orphan duplicate website_sale.variants view
-DELETE FROM ir_ui_view v USING ir_ui_view v2 WHERE v.key='website_sale.variants' AND v2.key='website_sale.variants' AND v.id > v2.id AND NOT EXISTS (SELECT 1 FROM ir_model_data d WHERE d.model='ir.ui.view' AND d.res_id=v.id);
+-- Remove broken third-party modules from v16
+DELETE FROM ir_module_module WHERE name IN (
+    'whatsapp_mail_messaging',
+    'odoo_whatsapp_integration',
+    'product_brand_ecommerce',
+    'product_brand_sale'
+);
 
--- Fix product_details broken view
+-- Deactivate broken Studio/gen_key views
+UPDATE ir_ui_view SET active = false WHERE arch_db::text ILIKE '%products_attributes_filters%';
+UPDATE ir_ui_view SET active = false WHERE arch_db::text ILIKE '%itemprop%' AND arch_db::text ILIKE '%description%';
+UPDATE ir_ui_view SET active = false WHERE arch_db::text ILIKE '%x_studio_montant_en_lettre_%';
 UPDATE ir_ui_view SET active = false WHERE arch_db::text ILIKE '%product_details%' AND (key ILIKE 'gen_key%' OR name ILIKE '%studio%');
+UPDATE ir_ui_view SET active = false WHERE name ILIKE '%Hide Variant Badge Extra Price%';
+UPDATE ir_ui_view SET active = false WHERE key IN ('gen_key.ca61e6', 'gen_key.7a9bdc', 'gen_key.6ad26c');
 
--- Fix website_sale_stock broken product view
-DELETE FROM ir_ui_view WHERE id = 2134; UPDATE ir_ui_view SET active = false WHERE id = 4659;
+-- Delete orphan duplicate views (same key, no ir_model_data entry)
+DELETE FROM ir_ui_view
+WHERE key IN ('website_sale.variants', 'website_sale_stock.website_sale_stock_product')
+  AND NOT EXISTS (
+      SELECT 1 FROM ir_model_data d
+      WHERE d.model = 'ir.ui.view' AND d.res_id = ir_ui_view.id
+  );
 
-UPDATE ir_ui_view SET active = false WHERE id = 2134;
-
--- Fix assets
-DELETE FROM ir_attachment WHERE url ILIKE '/web/assets%';
-
--- Fix permissions anchor
+-- Base URLs
 UPDATE ir_config_parameter SET value = 'https://19.tecas.ma' WHERE key = 'web.base.url';
 UPDATE ir_config_parameter SET value = 'https://19.tecas.ma' WHERE key = 'web.base.url.freeze';
-"
 
+-- pgvector
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Clear compiled assets cache
+DELETE FROM ir_attachment WHERE url ILIKE '/web/assets%';
+
+SQL
+
+echo "[$(date)] DB fixes applied. Restarting web container..."
 docker restart tecas-web-19
-sleep 10
+sleep 12
 docker exec -u root tecas-web-19 chown -R odoo:odoo /var/lib/odoo
-echo "Startup fixes applied."
+echo "[$(date)] Done."
