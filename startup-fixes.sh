@@ -1,7 +1,6 @@
 #!/bin/bash
 # TECAS v19 — Startup fixes, runs on every boot via cron
 # Idempotent: safe to run multiple times
-echo "[$(date)] Applying TECAS v19 startup fixes..."
 
 docker exec tecas-db-19 psql -U odoo19 -d tecas19 <<'SQL'
 
@@ -44,8 +43,6 @@ DELETE FROM ir_attachment WHERE url ILIKE '/web/assets%';
 
 SQL
 
-echo "[$(date)] DB fixes applied. Restarting web container..."
-docker restart tecas-web-19
+docker restart tecas-web-19 > /dev/null 2>&1
 sleep 12
 docker exec -u root tecas-web-19 chown -R odoo:odoo /var/lib/odoo
-echo "[$(date)] Done."
