@@ -11,7 +11,6 @@ services:
       - tecas-db-data:/var/lib/postgresql/data
     networks:
       - tecas-v19-net
-
   tecas-web-19:
     build: .
     image: tecas-web:v19
@@ -29,22 +28,9 @@ services:
     command: odoo --config /etc/odoo/odoo.conf
     networks:
       - tecas-v19-net
-
 volumes:
   tecas-db-data:
   tecas-filestore:
-
 networks:
   tecas-v19-net:
     driver: bridge
-
-  tecas-startup-fixes:
-    image: docker:cli
-    depends_on:
-      tecas-web-19:
-        condition: service_started
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./startup-fixes.sh:/startup-fixes.sh
-    command: sh /startup-fixes.sh
-    restart: "no"
