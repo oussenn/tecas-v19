@@ -1,29 +1,48 @@
 <odoo>
     <template id="report_invoice_document_inherit" inherit_id="account.report_invoice_document">
+
         <xpath expr="//t[@t-if='o.tax_totals'][@t-call='account.document_tax_totals']" position="after">
             <t t-if="o.cash">
                 <tr class="o_total">
-                    <td><strong>Frais de Timbre</strong></td>
-                    <td class="text-end">
-                        <span t-out="o.stamp_duty"
+                    <td style="background-color:#1e3a8a !important; color:#ffffff !important;">
+                        <strong style="color:#ffffff !important;">Frais de Timbre</strong>
+                    </td>
+                    <td class="text-end" style="background-color:#1e3a8a !important; color:#ffffff !important;">
+                        <span style="color:#ffffff !important;"
+                              t-out="o.stamp_duty"
                               t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                     </td>
                 </tr>
-                <tr>
-                    <td><strong>Net à Payer</strong></td>
-                    <td class="text-end">
-                        <span t-out="o.net_to_pay"
-                              t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                <tr class="o_total fw-bold">
+                    <td style="background-color:#000000 !important; color:#ffffff !important;">
+                        <strong style="color:#ffffff !important;">Net à Payer</strong>
+                    </td>
+                    <td class="text-end" style="background-color:#000000 !important; color:#ffffff !important;">
+                        <strong style="color:#ffffff !important;"
+                                t-out="o.net_to_pay"
+                                t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                     </td>
                 </tr>
             </t>
         </xpath>
-        <xpath expr="//p[@name='payment_communication']" position="before">
+
+        <xpath expr="//p[@t-if='o.company_id.display_invoice_amount_total_words']" position="attributes">
+            <attribute name="t-if">o.company_id.display_invoice_amount_total_words and not o.cash</attribute>
+        </xpath>
+
+        <!-- Inject AFTER the overflow-hidden div so float is fully cleared -->
+        <xpath expr="//div[contains(@class,'overflow-hidden')]" position="after">
             <t t-if="o.cash">
-                <p class="text-muted">
-                    Droit de timbre payé sur états <br/> (décision n°_83 du 1_3_83)
-                </p>
+                <div class="mt-3" name="tecas_stamp_duty_legal">
+                    <p class="mb-1"><strong>Arrêtée la présente facture à la somme de :</strong>
+                        <span t-field="o.amount_total_words"/>
+                    </p>
+                    <p class="text-muted small mb-0">
+                        Droit de timbre payé sur états <br/>(décision n°_83 du 1_3_83)
+                    </p>
+                </div>
             </t>
         </xpath>
+
     </template>
 </odoo>

@@ -1,55 +1,18 @@
-FROM python:3.11-slim-bookworm
+FROM odoo:19
 
-ENV LANG=C.UTF-8 \
-    ODOO_VERSION=19.0
+USER root
 
-# System dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libxml2-dev \
-    libxslt1-dev \
-    libldap2-dev \
-    libsasl2-dev \
-    libssl-dev \
-    libjpeg-dev \
-    libpq-dev \
-    libffi-dev \
-    node-less \
-    npm \
-    git \
-    curl \
-    unzip \
-    wkhtmltopdf \
-    postgresql-client \
+RUN apt-get update && apt-get install -y --no-install-recommends unzip \
     && rm -rf /var/lib/apt/lists/*
 
-# Create odoo user
-RUN useradd -m -d /odoo -U -r -s /bin/bash odoo
-
-# Copy and install enterprise
 COPY enterprise-19.0.zip /tmp/enterprise.zip
-RUN unzip /tmp/enterprise.zip -d /odoo/enterprise && rm /tmp/enterprise.zip
+RUN unzip /tmp/enterprise.zip -d /tmp/enterprise \
+    && cp -r /tmp/enterprise/enterprise-19.0/* /mnt/extra-addons/ \
+    && rm -rf /tmp/enterprise /tmp/enterprise.zip
 
-# Copy upgraded addons (from upgrade.zip)
-COPY upgraded.zip /tmp/upgraded.zip
-RUN unzip /tmp/upgraded.zip -d /odoo/upgraded && rm /tmp/upgraded.zip
-
-# Copy custom addons
-COPY addons/ /odoo/addons/
-
-# Install Odoo python deps from enterprise
-RUN pip install --no-cache-dir \
-    -r /odoo/enterprise/odoo-19.0/requirements.txt \
+RUN pip install --no-cache-dir --break-system-packages \
     lxml-html-clean \
-    phonenumbers
-
-# Odoo config
-COPY odoo.conf /etc/odoo/odoo.conf
-
-RUN chown -R odoo:odoo /odoo /etc/odoo
-
-VOLUME ["/var/lib/odoo"]
-EXPOSE 8069
+    phonenumbers \
+    google-auth
 
 USER odoo
-CMD ["python3", "/odoo/enterprise/odoo-19.0/odoo-bin", "-c", "/etc/odoo/odoo.conf"]

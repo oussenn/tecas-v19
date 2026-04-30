@@ -10,6 +10,12 @@
         "views/website_template.xml",
         "views/hide_variant_price_extra.xml",
     ],
+    "assets": {
+        "web.assets_frontend": [
+            "tecas_product_webextras/static/src/js/variant_stock_guard.js",
+            "tecas_product_webextras/static/src/css/hide_badge.css",
+        ],
+    },
     "installable": True,
     "application": False,
 }

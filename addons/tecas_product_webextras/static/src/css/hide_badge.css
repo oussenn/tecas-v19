@@ -1,0 +1,8 @@
+/* Hide variant price badges on website product page */
+.badge.text-bg-primary,
+.sign_badge_price_extra,
+.variant_price_extra,
+.o_wsale_product_attribute span.badge,
+.o_variant_pills span.badge {
+    display: none !important;
+}

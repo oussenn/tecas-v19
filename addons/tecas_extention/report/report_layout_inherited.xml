@@ -1,0 +1,53 @@
+<odoo>
+    <template id="external_layout_boxed_tecas_inherit"
+              inherit_id="web.external_layout_boxed">
+
+        <!-- Tagline top-right above company address -->
+        <xpath expr="//div[hasclass('col-8') and hasclass('text-end')]/div[@name='company_address']" position="before">
+            <div t-if="not is_html_empty(company.report_header)" class="mb-2">
+                <strong t-field="company.report_header"
+                        class="o_company_tagline"
+                        style="font-size: 18px; text-transform: uppercase; line-height: 1.2;"/>
+            </div>
+        </xpath>
+
+        <!-- Separator line under the header row -->
+        <xpath expr="//div[hasclass('row') and hasclass('mb8')]" position="after">
+            <div style="border-bottom: 1px solid #dee2e6; margin-bottom: 8px; margin-top: 4px;"/>
+        </xpath>
+
+        <!-- Background watermark via t-set override before the article div -->
+        <xpath expr="//t[@t-set='layout_background_url']" position="replace">
+            <t t-set="layout_background_url" t-value="'/tecas_extention/static/img/bg_background_template.jpg'"/>
+        </xpath>
+
+        <!-- Center footer, remove tagline from footer -->
+        <xpath expr="//div[hasclass('o_footer_content')]" position="replace">
+            <div class="o_footer_content border-top pt-2 text-center">
+                <div><span t-field="company.report_footer"/></div>
+                <div class="text-muted">
+                    <span t-if="report_type == 'pdf' and display_name_in_footer"
+                          t-out="str(o.name) + ', '">(document name)</span>
+                    <span t-if="report_type == 'pdf'">Page : <span class="page"/> / <span class="topage"/></span>
+                </div>
+            </div>
+        </xpath>
+
+    </template>
+
+    <!-- Invoice: rename "Amount" → "Prix Total", show price_total (tax-included) -->
+    <template id="report_invoice_pricetotal_inherit"
+              inherit_id="account.report_invoice_document">
+
+        <xpath expr="//th[@name='th_subtotal']" position="replace">
+            <th name="th_subtotal" class="text-end"><span>Prix Total</span></th>
+        </xpath>
+
+        <xpath expr="//td[@name='td_subtotal']" position="replace">
+            <td name="td_subtotal" class="text-end o_price_total">
+                <span t-if="not hide_prices" class="text-nowrap" t-field="line.price_total"/>
+            </td>
+        </xpath>
+
+    </template>
+</odoo>

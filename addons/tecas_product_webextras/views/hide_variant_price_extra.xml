@@ -1,11 +1,3 @@
 <odoo>
-  <record id="hide_badge_extra_price" model="ir.ui.view">
-    <field name="name">Hide Variant Badge Extra Price</field>
-    <field name="inherit_id" ref="website_sale.badge_extra_price"/>
-    <field name="arch" type="xml">
-      <xpath expr="//span[@t-if='price_extra']" position="attributes">
-        <attribute name="style">display:none !important;</attribute>
-      </xpath>
-    </field>
-  </record>
+    <!-- Variant price badge hiding: empty for now, will revisit if needed -->
 </odoo>

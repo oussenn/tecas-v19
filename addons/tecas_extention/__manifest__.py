@@ -10,6 +10,7 @@
     'data': [
         'security/ir.model.access.csv',
         'report/invoice_inherited.xml',
+        'report/report_layout_inherited.xml',
         'views/account_move.xml',
         'wizard/split_invoice.xml',
     ],

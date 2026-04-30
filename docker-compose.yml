@@ -1,16 +1,14 @@
-version: '3.8'
-
 services:
   tecas-db-19:
-    image: postgres:15
+    image: pgvector/pgvector:pg15
     container_name: tecas-db-19
     restart: unless-stopped
     environment:
-      POSTGRES_DB: TECAS_PD_V19
-      POSTGRES_USER: odoo
+      POSTGRES_DB: tecas19
+      POSTGRES_USER: odoo19
       POSTGRES_PASSWORD: odoo
     volumes:
-      - tecas-db-19-data:/var/lib/postgresql/data
+      - tecas-db-data:/var/lib/postgresql/data
     networks:
       - tecas-v19-net
 
@@ -23,19 +21,30 @@ services:
       - tecas-db-19
     ports:
       - "8069:8069"
+      - "8072:8072"
     volumes:
-      - tecas-filestore-19:/var/lib/odoo
-    environment:
-      HOST: tecas-db-19
-      USER: odoo
-      PASSWORD: odoo
+      - tecas-filestore:/var/lib/odoo
+      - ./config/odoo.conf:/etc/odoo/odoo.conf
+      - ./addons:/mnt/user-addons
+    command: odoo --config /etc/odoo/odoo.conf
     networks:
       - tecas-v19-net
 
 volumes:
-  tecas-db-19-data:
-  tecas-filestore-19:
+  tecas-db-data:
+  tecas-filestore:
 
 networks:
   tecas-v19-net:
     driver: bridge
+
+  tecas-startup-fixes:
+    image: docker:cli
+    depends_on:
+      tecas-web-19:
+        condition: service_started
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./startup-fixes.sh:/startup-fixes.sh
+    command: sh /startup-fixes.sh
+    restart: "no"
