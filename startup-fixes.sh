@@ -10,6 +10,7 @@ UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to upgrade';
 -- Remove broken third-party modules from v16
 DELETE FROM ir_module_module WHERE name IN (
     'whatsapp_mail_messaging',
+    'odoo_n8n_webhook',
     'odoo_whatsapp_integration',
     'product_brand_ecommerce',
     'product_brand_sale'
@@ -34,6 +35,14 @@ WHERE key IN ('website_sale.variants', 'website_sale_stock.website_sale_stock_pr
 -- Base URLs
 UPDATE ir_config_parameter SET value = 'https://19.tecas.ma' WHERE key = 'web.base.url';
 UPDATE ir_config_parameter SET value = 'https://19.tecas.ma' WHERE key = 'web.base.url.freeze';
+
+-- Fix wkhtmltopdf report rendering (proxy_mode needs localhost for PDF generation)
+INSERT INTO ir_config_parameter (key, value)
+VALUES ('report.url', 'http://localhost:8069')
+ON CONFLICT (key) DO UPDATE SET value = 'http://localhost:8069';
+
+-- Fix unaccent immutability (fixes trigram index warnings)
+ALTER FUNCTION unaccent(text) IMMUTABLE;
 
 -- pgvector
 CREATE EXTENSION IF NOT EXISTS vector;
