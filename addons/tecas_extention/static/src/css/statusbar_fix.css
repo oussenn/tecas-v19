@@ -1,0 +1,8 @@
+/* Chrome 109 / Windows 7
+   ::before pseudo-element renders as solid white, covering button text.
+   Fix: force it transparent across all statusbar instances. */
+
+.o_arrow_button::before {
+    background-color: transparent !important;
+    background: transparent !important;
+}

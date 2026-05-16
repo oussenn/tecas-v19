@@ -16,7 +16,10 @@
     ],
     'assets': {
         'web.assets_backend': [
+            'tecas_extention/static/src/js/array_polyfill.js',
+            'tecas_extention/static/src/css/statusbar_fix.css',
             'tecas_extention/static/src/js/account_move_rpc.js',
+            'tecas_extention/static/src/js/editor_destroy_patch.js',
         ],
     },
     'license': 'LGPL-3',

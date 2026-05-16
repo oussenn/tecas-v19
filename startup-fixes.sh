@@ -55,3 +55,59 @@ SQL
 docker restart tecas-web-19 > /dev/null 2>&1
 sleep 12
 docker exec -u root tecas-web-19 chown -R odoo:odoo /var/lib/odoo
+
+# ============================================================
+# CHROME 109 / WINDOWS 7 COMPATIBILITY POLYFILL
+# Array.prototype.toReversed missing in Chrome < 110
+# Must be present in tecas_extention/static/src/js/array_polyfill.js
+# ============================================================
+POLYFILL_FILE="/opt/tecas-v19/addons/tecas_extention/static/src/js/array_polyfill.js"
+
+if [ ! -f "$POLYFILL_FILE" ]; then
+    echo "[startup-fixes] Writing array_polyfill.js..."
+    cat > "$POLYFILL_FILE" << 'JSEOF'
+/** @odoo-module **/
+
+// Safe polyfill for Chrome 109 (Windows 7) - only toReversed is needed by Odoo 19 HistoryPlugin
+// We patch Array.prototype only if missing, no other methods touched
+(function() {
+    if (typeof Array.prototype.toReversed === 'undefined') {
+        Object.defineProperty(Array.prototype, 'toReversed', {
+            value: function toReversed() {
+                return Array.prototype.slice.call(this).reverse();
+            },
+            writable: true,
+            configurable: true,
+            enumerable: false  // critical: non-enumerable so for...in loops are unaffected
+        });
+    }
+})();
+JSEOF
+    echo "[startup-fixes] array_polyfill.js written."
+else
+    echo "[startup-fixes] array_polyfill.js already exists, skipping."
+fi
+
+# ============================================================
+# CHROME 109 / WINDOWS 7 — STATUSBAR ::before WHITE OVERLAY FIX
+# ::before pseudo-element renders as solid white on Chrome 109,
+# covering button text. Fix: force transparent background.
+# ============================================================
+STATUSBAR_FIX="/opt/tecas-v19/addons/tecas_extention/static/src/css/statusbar_fix.css"
+
+if [ ! -f "$STATUSBAR_FIX" ]; then
+    echo "[startup-fixes] Writing statusbar_fix.css..."
+    cat > "$STATUSBAR_FIX" << 'CSSEOF'
+/* Chrome 109 / Windows 7
+   ::before pseudo-element renders as solid white, covering button text.
+   Fix: force it transparent across all statusbar instances. */
+
+.o_arrow_button::before {
+    background-color: transparent !important;
+    background: transparent !important;
+}
+CSSEOF
+    echo "[startup-fixes] statusbar_fix.css written."
+else
+    echo "[startup-fixes] statusbar_fix.css already exists, skipping."
+fi
