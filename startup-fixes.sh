@@ -91,6 +91,10 @@ ALTER FUNCTION unaccent(text) IMMUTABLE;
 -- pgvector extension
 CREATE EXTENSION IF NOT EXISTS vector;
 
+-- Fix broken Studio-copied invoice report templates (formatted_amount KeyError in v19)
+UPDATE ir_act_report_xml SET report_name = 'account.report_invoice_with_payments'
+WHERE report_name ILIKE '%copy%' AND report_name ILIKE '%invoice_with_payments%';
+
 -- Clear compiled assets cache
 DELETE FROM ir_attachment WHERE url ILIKE '/web/assets%';
 
