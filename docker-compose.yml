@@ -11,6 +11,7 @@ services:
       - tecas-db-data:/var/lib/postgresql/data
     networks:
       - tecas-v19-net
+
   tecas-web-19:
     build: .
     image: tecas-web:v19
@@ -28,9 +29,13 @@ services:
     command: odoo --config /etc/odoo/odoo.conf
     networks:
       - tecas-v19-net
+
 volumes:
   tecas-db-data:
   tecas-filestore:
+    external: true
+    name: tecas-v19_tecas-filestore
+
 networks:
   tecas-v19-net:
     driver: bridge
