@@ -74,8 +74,8 @@ AND id != (SELECT MIN(id) FROM ir_ui_view WHERE key = 'website_sale.variants');
 -- BASE URLS
 -- ============================================================
 INSERT INTO ir_config_parameter (key, value)
-VALUES ('web.base.url', 'https://19.tecas.ma')
-ON CONFLICT (key) DO UPDATE SET value = 'https://19.tecas.ma';
+VALUES ('web.base.url', 'https://tecas.ma')
+ON CONFLICT (key) DO UPDATE SET value = 'https://tecas.ma';
 
 INSERT INTO ir_config_parameter (key, value)
 VALUES ('report.url', 'http://localhost:8069')
