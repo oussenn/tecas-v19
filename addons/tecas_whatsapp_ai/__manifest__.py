@@ -3,7 +3,7 @@
     'version': '19.0.1.0.0',
     'summary': 'AI-powered WhatsApp onboarding for incoming leads',
     'description': (
-        'Automated Claude AI assistant that qualifies incoming WhatsApp leads '
+        'AI assistant that qualifies incoming WhatsApp leads '
         'on the Service Commercial number and escalates to a salesman when ready.'
     ),
     'author': 'TECAS ENERGIE SOLAIRE',

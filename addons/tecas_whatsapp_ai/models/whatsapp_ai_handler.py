@@ -8,9 +8,6 @@ from odoo import api, models
 
 _logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# System prompt - instructs Claude to act as TECAS commercial assistant
-# ---------------------------------------------------------------------------
 _SYSTEM_PROMPT = (
     "Tu es l'assistant commercial de TECAS ENERGIE SOLAIRE, une entreprise marocaine "
     "specialisee dans l'installation de systemes photovoltaiques.\n\n"
@@ -49,7 +46,6 @@ _SYSTEM_PROMPT = (
 _AI_API_URL = 'https://api.openai.com/v1/chat/completions'
 _AI_MODEL = 'gpt-4o'
 
-# Normalized phone of the Service Commercial WABA number
 _SERVICE_COMMERCIAL_PHONE = '212664276055'
 
 
@@ -57,16 +53,14 @@ class TecasWhatsappAI(models.AbstractModel):
     _name = 'tecas.whatsapp.ai'
     _description = 'TECAS WhatsApp AI Handler'
 
-    # ------------------------------------------------------------------
-    # Public entry point -- called by the Odoo automation server action
-    # ------------------------------------------------------------------
-
     @api.model
     def handle_incoming_message(self, whatsapp_msg_id):
-        """Process an inbound whatsapp.message and respond via Claude AI."""
+        """Process an inbound whatsapp.message and respond via OpenAI."""
+        _logger.info('TecasWhatsappAI: handle_incoming_message START msg=%s', whatsapp_msg_id)
         try:
             msg = self.env['whatsapp.message'].browse(whatsapp_msg_id)
             if not msg.exists():
+                _logger.warning('TecasWhatsappAI: msg %s does not exist', whatsapp_msg_id)
                 return
 
             if not self._is_service_commercial(msg):
@@ -76,9 +70,7 @@ class TecasWhatsappAI(models.AbstractModel):
             if not channel:
                 return
 
-            api_key = self.env['ir.config_parameter'].sudo().get_param(
-                'ai.openai_key'
-            )
+            api_key = self.env['ir.config_parameter'].sudo().get_param('ai.openai_key')
             if not api_key:
                 _logger.error(
                     'TecasWhatsappAI: OpenAI API key missing -- set '
@@ -86,8 +78,9 @@ class TecasWhatsappAI(models.AbstractModel):
                 )
                 return
 
-            messages = self._build_claude_messages(channel)
+            messages = self._build_messages(channel)
             if not messages:
+                _logger.warning('TecasWhatsappAI: msg %s -- no conversation history built for channel %s', whatsapp_msg_id, channel.id)
                 return
 
             result = self._call_openai(messages, api_key)
@@ -124,18 +117,24 @@ class TecasWhatsappAI(models.AbstractModel):
         """Return True only when the message belongs to the Service Commercial WABA."""
         raw = (msg.wa_account_id.phone_number or '').strip()
         normalized = re.sub(r'[^\d]', '', raw)
-        # Accept with or without leading zero: 0664276055 -> 212664276055
         if normalized.startswith('0'):
             normalized = '212' + normalized[1:]
         return normalized == _SERVICE_COMMERCIAL_PHONE
 
     def _get_channel(self, msg):
         """Return the discuss.channel linked to this whatsapp.message."""
-        channel = msg.discuss_channel_id
-        if not channel:
+        mail_msg = msg.mail_message_id
+        if not mail_msg or mail_msg.model != 'discuss.channel':
             _logger.warning(
-                'TecasWhatsappAI: No discuss_channel_id on whatsapp.message %s',
+                'TecasWhatsappAI: No discuss.channel linked to whatsapp.message %s',
                 msg.id,
+            )
+            return False
+        channel = self.env['discuss.channel'].browse(mail_msg.res_id)
+        if not channel.exists():
+            _logger.warning(
+                'TecasWhatsappAI: discuss.channel %s not found for whatsapp.message %s',
+                mail_msg.res_id, msg.id,
             )
             return False
         return channel
@@ -144,10 +143,13 @@ class TecasWhatsappAI(models.AbstractModel):
     # Conversation building
     # ------------------------------------------------------------------
 
-    def _build_claude_messages(self, channel):
-        """Return the last 20 messages as a Claude-compatible list of dicts."""
+    def _build_messages(self, channel):
+        """Return the last 20 messages as an OpenAI-compatible list of dicts."""
         wa_msgs = self.env['whatsapp.message'].search(
-            [('discuss_channel_id', '=', channel.id)],
+            [
+                ('mail_message_id.model', '=', 'discuss.channel'),
+                ('mail_message_id.res_id', '=', channel.id),
+            ],
             order='id asc',
             limit=20,
         )
@@ -158,13 +160,12 @@ class TecasWhatsappAI(models.AbstractModel):
             if not body:
                 continue
             role = 'user' if wa_msg.message_type == 'inbound' else 'assistant'
-            # Merge consecutive same-role turns (Claude requires alternating roles)
+            # Merge consecutive same-role turns (OpenAI requires alternating roles)
             if result and result[-1]['role'] == role:
                 result[-1]['content'] += '\n' + body
             else:
                 result.append({'role': role, 'content': body})
 
-        # Claude requires the conversation to begin with a 'user' turn
         while result and result[0]['role'] != 'user':
             result.pop(0)
 
@@ -184,7 +185,7 @@ class TecasWhatsappAI(models.AbstractModel):
         return text.strip()
 
     # ------------------------------------------------------------------
-    # Claude API
+    # OpenAI API
     # ------------------------------------------------------------------
 
     def _call_openai(self, messages, api_key):
@@ -192,6 +193,7 @@ class TecasWhatsappAI(models.AbstractModel):
         payload = json.dumps({
             'model': _AI_MODEL,
             'max_tokens': 512,
+            'response_format': {'type': 'json_object'},
             'messages': [{'role': 'system', 'content': _SYSTEM_PROMPT}] + messages,
         }).encode('utf-8')
 
@@ -219,12 +221,10 @@ class TecasWhatsappAI(models.AbstractModel):
 
     @staticmethod
     def _parse_json_response(text):
-        """Extract the JSON object from Claude's reply, tolerating markdown fences."""
-        # Strip ```json ... ``` fences
+        """Extract the JSON object from the AI reply, tolerating markdown fences."""
         fenced = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', text, re.DOTALL)
         if fenced:
             text = fenced.group(1)
-        # Grab first {...} block containing "escalade"
         block = re.search(r'\{[^{}]*"escalade"[^{}]*\}', text, re.DOTALL)
         if block:
             text = block.group(0)
@@ -232,7 +232,7 @@ class TecasWhatsappAI(models.AbstractModel):
             return json.loads(text)
         except (json.JSONDecodeError, ValueError):
             _logger.error(
-                'TecasWhatsappAI: Cannot parse Claude response as JSON: %s',
+                'TecasWhatsappAI: Cannot parse AI response as JSON: %s',
                 text[:400],
             )
             return None
@@ -272,7 +272,6 @@ class TecasWhatsappAI(models.AbstractModel):
         user = self.env['res.users'].browse(ids[next_idx])
         if user.exists() and user.active:
             return user
-        # Skip inactive user -- try the rest of the pool once
         for offset in range(1, len(ids)):
             candidate_idx = (next_idx + offset) % len(ids)
             candidate = self.env['res.users'].browse(ids[candidate_idx])
@@ -292,7 +291,6 @@ class TecasWhatsappAI(models.AbstractModel):
         if lead:
             self._post_lead_briefing(lead, salesman, partner, msg, raison, messages)
         else:
-            # Fallback: notify salesman's partner inbox directly
             self._notify_salesman_inbox(salesman, msg, raison, messages)
 
     def _channel_partner(self, channel):
@@ -346,11 +344,7 @@ class TecasWhatsappAI(models.AbstractModel):
 
     def _post_lead_briefing(self, lead, salesman, partner, msg, raison, messages):
         """Post a briefing note on the CRM lead and notify the salesman."""
-        if partner:
-            phone = partner.phone or partner.mobile or msg.mobile_number or 'N/A'
-        else:
-            phone = msg.mobile_number or 'N/A'
-
+        phone = (partner.phone or partner.mobile or msg.mobile_number or 'N/A') if partner else (msg.mobile_number or 'N/A')
         convo_html = self._build_conversation_html(messages)
         body = (
             '<p><b>Escalade WhatsApp AI -- Action requise</b></p>'
@@ -373,7 +367,6 @@ class TecasWhatsappAI(models.AbstractModel):
             raison,
             convo_html,
         )
-
         lead.sudo().message_post(
             body=body,
             message_type='comment',
@@ -392,7 +385,6 @@ class TecasWhatsappAI(models.AbstractModel):
             '<div style="background:#f5f5f5;padding:10px 14px;border-left:4px solid #00a09d;'
             'font-size:13px;line-height:1.6">%s</div>'
         ) % (msg.mobile_number or 'N/A', raison, convo_html)
-
         salesman.sudo().partner_id.message_post(
             body=body,
             message_type='comment',
