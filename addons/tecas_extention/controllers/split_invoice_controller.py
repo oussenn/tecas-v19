@@ -3,7 +3,7 @@ from odoo.http import request
 
 class SplitInvoiceController(http.Controller):
 
-    @http.route('/split_invoice_wizard', type='json', auth='user')
+    @http.route('/split_invoice_wizard', type='jsonrpc', auth='user')
     def open_split_wizard(self, record_id):
         """Open the Split Invoice Wizard for the given record ID."""
         invoice = request.env['account.move'].browse(record_id)

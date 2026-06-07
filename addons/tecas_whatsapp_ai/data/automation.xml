@@ -29,7 +29,7 @@
             <field name="trigger">on_create</field>
             <!-- Pre-filter: only process inbound messages (outbound are our own replies) -->
             <field name="filter_domain">[("message_type", "=", "inbound")]</field>
-            <field name="action_server_id" ref="action_server_whatsapp_ai"/>
+            <field name="action_server_ids" eval="[(4, ref('action_server_whatsapp_ai'))]"/>
             <field name="active">True</field>
         </record>
 
