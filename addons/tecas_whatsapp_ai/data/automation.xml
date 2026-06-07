@@ -8,7 +8,7 @@
         calls Claude, and either auto-replies or escalates to a salesman.
 
         Post-install configuration required (Settings > Technical > System Parameters):
-          tecas_whatsapp_ai.claude_api_key        - Anthropic API key
+          ai.openai_key                           - OpenAI API key (must already exist in DB)
           tecas_whatsapp_ai.salesman_ids          - comma-separated res.users IDs, e.g. "5,8,12,15,20"
           tecas_whatsapp_ai.last_salesman_index   - auto-managed round-robin counter (seed: -1)
     -->

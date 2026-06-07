@@ -46,8 +46,8 @@ _SYSTEM_PROMPT = (
     "Avec escalade : {\"escalade\": true, \"raison\": \"resume concis de la situation pour le commercial\"}"
 )
 
-_CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages'
-_CLAUDE_MODEL = 'claude-sonnet-4-20250514'
+_AI_API_URL = 'https://api.openai.com/v1/chat/completions'
+_AI_MODEL = 'gpt-4o'
 
 # Normalized phone of the Service Commercial WABA number
 _SERVICE_COMMERCIAL_PHONE = '212664276055'
@@ -77,12 +77,12 @@ class TecasWhatsappAI(models.AbstractModel):
                 return
 
             api_key = self.env['ir.config_parameter'].sudo().get_param(
-                'tecas_whatsapp_ai.claude_api_key'
+                'ai.openai_key'
             )
             if not api_key:
                 _logger.error(
-                    'TecasWhatsappAI: Claude API key missing -- set '
-                    'ir.config_parameter key "tecas_whatsapp_ai.claude_api_key"'
+                    'TecasWhatsappAI: OpenAI API key missing -- set '
+                    'ir.config_parameter key "ai.openai_key"'
                 )
                 return
 
@@ -90,7 +90,7 @@ class TecasWhatsappAI(models.AbstractModel):
             if not messages:
                 return
 
-            result = self._call_claude(messages, api_key)
+            result = self._call_openai(messages, api_key)
             if result is None:
                 return
 
@@ -187,22 +187,20 @@ class TecasWhatsappAI(models.AbstractModel):
     # Claude API
     # ------------------------------------------------------------------
 
-    def _call_claude(self, messages, api_key):
-        """Send messages to Claude and return the parsed JSON dict, or None on error."""
+    def _call_openai(self, messages, api_key):
+        """Send messages to OpenAI and return the parsed JSON dict, or None on error."""
         payload = json.dumps({
-            'model': _CLAUDE_MODEL,
+            'model': _AI_MODEL,
             'max_tokens': 512,
-            'system': _SYSTEM_PROMPT,
-            'messages': messages,
+            'messages': [{'role': 'system', 'content': _SYSTEM_PROMPT}] + messages,
         }).encode('utf-8')
 
         req = urllib.request.Request(
-            _CLAUDE_API_URL,
+            _AI_API_URL,
             data=payload,
             headers={
                 'Content-Type': 'application/json',
-                'x-api-key': api_key,
-                'anthropic-version': '2023-06-01',
+                'Authorization': 'Bearer %s' % api_key,
             },
             method='POST',
         )
@@ -210,13 +208,13 @@ class TecasWhatsappAI(models.AbstractModel):
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read().decode('utf-8'))
-                raw_text = (data.get('content') or [{}])[0].get('text', '').strip()
+                raw_text = data['choices'][0]['message']['content'].strip()
                 return self._parse_json_response(raw_text)
         except urllib.error.HTTPError as exc:
             body = exc.read().decode('utf-8', errors='replace')
-            _logger.error('TecasWhatsappAI: Claude HTTP %s -- %s', exc.code, body[:500])
+            _logger.error('TecasWhatsappAI: OpenAI HTTP %s -- %s', exc.code, body[:500])
         except urllib.error.URLError as exc:
-            _logger.error('TecasWhatsappAI: Claude network error -- %s', exc.reason)
+            _logger.error('TecasWhatsappAI: OpenAI network error -- %s', exc.reason)
         return None
 
     @staticmethod
