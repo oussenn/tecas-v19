@@ -1,7 +1,7 @@
 from odoo import models
 from odoo.addons.mail.tools.discuss import Store
 
-ALWAYS_VISIBLE_LOGINS = ['info@albatros.ma', 'ra@tecas.ma', 'com1@tecas.ma']
+ALWAYS_VISIBLE_LOGINS = ['info@albatros.ma', 'ra@tecas.ma']
 
 class ResPartner(models.Model):
     _inherit = 'res.partner'

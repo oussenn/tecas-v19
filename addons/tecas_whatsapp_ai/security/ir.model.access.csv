@@ -1,1 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_tecas_whatsapp_ai_config_admin,tecas.whatsapp.ai.config admin,model_tecas_whatsapp_ai_config,base.group_system,1,1,1,1
+access_tecas_whatsapp_ai_config_user,tecas.whatsapp.ai.config user,model_tecas_whatsapp_ai_config,base.group_user,1,0,0,0

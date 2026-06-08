@@ -3,50 +3,36 @@ import logging
 import re
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone, timedelta
 
+from markupsafe import Markup
 from odoo import api, models
 
 _logger = logging.getLogger(__name__)
 
-_SYSTEM_PROMPT = (
-    "Tu es l'assistant commercial de TECAS ENERGIE SOLAIRE, une entreprise marocaine "
-    "specialisee dans l'installation de systemes photovoltaiques.\n\n"
-    "PRODUITS ET SERVICES TECAS :\n"
-    "- Panneaux solaires photovoltaiques (residentiels, industriels, agricoles)\n"
-    "- Onduleurs hybrides, on-grid et off-grid\n"
-    "- Batteries de stockage lithium et AGM\n"
-    "- Installation cle en main avec suivi et maintenance\n"
-    "- Interventions dans tout le Maroc (Casablanca, Rabat, Marrakech, Fes, Agadir, Tanger...)\n\n"
-    "TON ROLE :\n"
-    "Qualifier les prospects entrants et collecter les trois informations indispensables "
-    "pour qu'un technicien puisse preparer un devis.\n\n"
-    "INFORMATIONS OBLIGATOIRES A COLLECTER (une a la fois) :\n"
-    "1. Surface disponible sur le toit en m2 (ou nombre de panneaux envisage)\n"
-    "2. Consommation mensuelle d'electricite en kWh ou montant de la facture ONEE en DH\n"
-    "3. Ville / region d'installation\n\n"
-    "REGLES ABSOLUES :\n"
-    "- Tu ne donnes JAMAIS de prix fermes ni de devis chiffres -- renvoie toujours "
-    "vers une evaluation sur site\n"
-    "- Pose UNE seule question a la fois, de maniere naturelle et chaleureuse\n"
-    "- Reponds dans la langue du client (francais ou darija marocain)\n"
-    "- Sois concis, professionnel et enthousiaste\n"
-    "- N'invente pas d'informations techniques specifiques (rendements exacts, marques...)\n\n"
-    "QUAND ESCALADER (passer la main a un commercial humain) :\n"
-    "- Le client demande un devis, un prix ou une estimation chiffree\n"
-    "- Le client veut parler a un commercial, un technicien ou un responsable\n"
-    "- Le client exprime une intention d'achat claire (\"je veux acheter\", \"je suis decide\")\n"
-    "- La conversation devient tres technique (dimensionnement precis, protections, schemas)\n"
-    "- Les trois informations requises ont deja ete collectees\n"
-    "- Le client semble frustre ou impatient\n\n"
-    "FORMAT DE REPONSE -- JSON STRICT UNIQUEMENT, rien d'autre avant ou apres :\n"
-    "Sans escalade : {\"escalade\": false, \"reponse\": \"ton message en texte brut sans HTML\"}\n"
-    "Avec escalade : {\"escalade\": true, \"raison\": \"resume concis de la situation pour le commercial\"}"
-)
-
 _AI_API_URL = 'https://api.openai.com/v1/chat/completions'
-_AI_MODEL = 'gpt-4o'
 
-_SERVICE_COMMERCIAL_PHONE = '212664276055'
+_PRODUCT_KEYWORDS = {'panneau', 'batterie', 'onduleur', 'materiel', 'matériel',
+                     'stock', 'disponible', 'référence', 'reference'}
+_PROMO_KEYWORDS   = {'promo', 'promotion', 'offre', 'remise', 'réduction', 'reduction'}
+_HOURS_KEYWORDS   = {'conseiller', 'disponible', 'rappel', 'horaire', 'quand', 'urgent'}
+
+_SERVICE_LABELS = {
+    'residential':         'Projet résidentiel',
+    'pumping':             'Pompage solaire',
+    'industrial':          'Projet industriel/commercial',
+    'equipment_panels':    'Achat matériel — Panneaux solaires',
+    'equipment_batteries': 'Achat matériel — Batteries lithium',
+    'equipment_inverters': 'Achat matériel — Onduleurs',
+    'equipment_cables':    'Achat matériel — Câbles et accessoires',
+    'sav':                 'SAV',
+    'quick_quote':         'Devis rapide',
+    'showroom':            'Visite showroom',
+    'advisor':             'Parler à un conseiller',
+}
+
+# Morocco is UTC+1 year-round (no DST)
+_TZ_MOROCCO = timezone(timedelta(hours=1))
 
 
 class TecasWhatsappAI(models.AbstractModel):
@@ -56,52 +42,78 @@ class TecasWhatsappAI(models.AbstractModel):
     @api.model
     def handle_incoming_message(self, whatsapp_msg_id):
         """Process an inbound whatsapp.message and respond via OpenAI."""
-        _logger.info('TecasWhatsappAI: handle_incoming_message START msg=%s', whatsapp_msg_id)
+        config = self.env['tecas.whatsapp.ai.config'].sudo().get_singleton()
+        if not config.active:
+            return
+
         try:
             msg = self.env['whatsapp.message'].browse(whatsapp_msg_id)
             if not msg.exists():
                 _logger.warning('TecasWhatsappAI: msg %s does not exist', whatsapp_msg_id)
                 return
 
-            if not self._is_service_commercial(msg):
+            if not self._is_service_commercial(msg, config):
                 return
 
             channel = self._get_channel(msg)
             if not channel:
                 return
 
-            api_key = self.env['ir.config_parameter'].sudo().get_param('ai.openai_key')
-            if not api_key:
+            if self._human_has_taken_over(channel, config):
+                _logger.info(
+                    'TecasWhatsappAI: channel %s — human agent active, AI skipped',
+                    channel.id,
+                )
+                return
+
+            if not config.openai_api_key:
                 _logger.error(
-                    'TecasWhatsappAI: OpenAI API key missing -- set '
-                    'ir.config_parameter key "ai.openai_key"'
+                    'TecasWhatsappAI: OpenAI API key not set -- configure it in WhatsApp > Bot'
                 )
                 return
 
             messages = self._build_messages(channel)
             if not messages:
-                _logger.warning('TecasWhatsappAI: msg %s -- no conversation history built for channel %s', whatsapp_msg_id, channel.id)
+                _logger.warning(
+                    'TecasWhatsappAI: msg %s -- no conversation history for channel %s',
+                    whatsapp_msg_id, channel.id,
+                )
                 return
 
-            result = self._call_openai(messages, api_key)
+            context_block = self._build_context_block(channel, messages)
+            result = self._call_openai(messages, config, context_block)
             if result is None:
                 return
 
+            reply = (result.get('reponse') or '').strip()
+            service = (result.get('service') or 'unknown').strip()
             if not result.get('escalade', False):
-                reply = (result.get('reponse') or '').strip()
                 if reply:
                     self._post_whatsapp_reply(channel, reply)
             else:
                 raison = result.get('raison') or 'Escalade demandee par le client.'
-                salesman = self._get_next_salesman()
+                partner = self._channel_partner(channel)
+                existing_lead = self._find_existing_lead(partner)
+                if existing_lead and existing_lead.user_id:
+                    salesman = existing_lead.user_id
+                    _logger.info(
+                        'TecasWhatsappAI: reusing lead=%s salesman=%s for partner=%s',
+                        existing_lead.id, salesman.id, partner.id if partner else None,
+                    )
+                else:
+                    salesman = self._get_next_salesman(config)
+                    _logger.info(
+                        'TecasWhatsappAI: no existing lead/salesman, round-robin -> salesman=%s',
+                        salesman.id if salesman else None,
+                    )
                 if salesman:
-                    self._escalate(channel, msg, raison, salesman, messages)
+                    self._escalate(channel, msg, raison, salesman, messages, service)
                 else:
                     _logger.warning(
-                        'TecasWhatsappAI: No salesmen configured -- '
-                        'set "tecas_whatsapp_ai.salesman_ids" in System Parameters '
-                        'as a comma-separated list of res.users IDs.'
+                        'TecasWhatsappAI: No salesmen configured -- add users in WhatsApp > Bot'
                     )
+                if reply:
+                    self._post_whatsapp_reply(channel, reply)
 
         except Exception:
             _logger.exception(
@@ -113,13 +125,14 @@ class TecasWhatsappAI(models.AbstractModel):
     # Account / channel helpers
     # ------------------------------------------------------------------
 
-    def _is_service_commercial(self, msg):
-        """Return True only when the message belongs to the Service Commercial WABA."""
-        raw = (msg.wa_account_id.phone_number or '').strip()
-        normalized = re.sub(r'[^\d]', '', raw)
-        if normalized.startswith('0'):
-            normalized = '212' + normalized[1:]
-        return normalized == _SERVICE_COMMERCIAL_PHONE
+    def _is_service_commercial(self, msg, config):
+        """Return True only when the message belongs to the configured WhatsApp account."""
+        if not config.wa_account_id:
+            _logger.warning(
+                'TecasWhatsappAI: No WhatsApp account selected in Bot configuration'
+            )
+            return False
+        return msg.wa_account_id.id == config.wa_account_id.id
 
     def _get_channel(self, msg):
         """Return the discuss.channel linked to this whatsapp.message."""
@@ -139,6 +152,34 @@ class TecasWhatsappAI(models.AbstractModel):
             return False
         return channel
 
+    def _human_has_taken_over(self, channel, config):
+        """
+        Return True if a human replied in this channel within the takeover window.
+        - 0   : disabled — AI always responds
+        - N>0 : AI stays silent for N days after the last human reply, then resumes
+        """
+        days = config.human_takeover_days
+        if days == 0:
+            return False
+
+        bot_partner_id = self.env.ref('base.partner_root').id
+        customer_partner = self._channel_partner(channel)
+        excluded_ids = [bot_partner_id]
+        if customer_partner:
+            excluded_ids.append(customer_partner.id)
+
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        domain = [
+            ('res_id', '=', channel.id),
+            ('model', '=', 'discuss.channel'),
+            ('message_type', '=', 'whatsapp_message'),
+            ('author_id', 'not in', excluded_ids),
+            ('author_id', '!=', False),
+            ('date', '>=', cutoff.replace(tzinfo=None)),
+        ]
+
+        return bool(self.env['mail.message'].sudo().search(domain, limit=1))
+
     # ------------------------------------------------------------------
     # Conversation building
     # ------------------------------------------------------------------
@@ -150,9 +191,10 @@ class TecasWhatsappAI(models.AbstractModel):
                 ('mail_message_id.model', '=', 'discuss.channel'),
                 ('mail_message_id.res_id', '=', channel.id),
             ],
-            order='id asc',
-            limit=20,
+            order='id desc',
+            limit=10,
         )
+        wa_msgs = wa_msgs.sorted('id')
 
         result = []
         for wa_msg in wa_msgs:
@@ -185,16 +227,172 @@ class TecasWhatsappAI(models.AbstractModel):
         return text.strip()
 
     # ------------------------------------------------------------------
+    # Lazy context injection
+    # ------------------------------------------------------------------
+
+    def _build_context_block(self, channel, messages):
+        """
+        Analyze the last 3 messages for intent keywords and return a context
+        string to append to the system prompt. Returns '' if nothing applies.
+        Token budget: ~400 tokens (≈1600 chars). Products truncated first,
+        then promos. CRM lead and business hours are always kept when triggered.
+        """
+        recent = ' '.join(m['content'] for m in messages[-3:]).lower()
+        # Normalize accented chars for keyword matching
+        recent_norm = (
+            recent
+            .replace('é', 'e').replace('è', 'e').replace('ê', 'e')
+            .replace('à', 'a').replace('â', 'a')
+            .replace('ô', 'o').replace('û', 'u').replace('î', 'i')
+            .replace('ç', 'c')
+        )
+
+        blocks_optional = []   # (key, text) — truncated if over budget
+        blocks_priority = []   # (key, text) — always kept
+
+        # 1. Product catalog
+        if _PRODUCT_KEYWORDS & set(recent_norm.split()):
+            try:
+                products = self.env['product.template'].sudo().search(
+                    [('sale_ok', '=', True), ('active', '=', True)],
+                    order='categ_id asc',
+                    limit=20,
+                )
+                if products:
+                    lines = ['CATALOGUE PRODUITS (stock actuel, sans prix) :']
+                    for p in products:
+                        try:
+                            qty = int(p.qty_available)
+                        except Exception:
+                            qty = 0
+                        categ = p.categ_id.name if p.categ_id else '—'
+                        lines.append('- [%s] %s : %d unités' % (categ, p.name, qty))
+                    blocks_optional.append(('products', '\n'.join(lines)))
+            except Exception:
+                _logger.warning('TecasWhatsappAI: context — product catalog query failed')
+
+        # 2. Active promotions
+        if _PROMO_KEYWORDS & set(recent_norm.split()):
+            try:
+                promos = self.env['product.template'].sudo().search(
+                    [
+                        ('sale_ok', '=', True),
+                        ('active', '=', True),
+                        ('description_sale', 'ilike', 'promo'),
+                    ],
+                    limit=5,
+                )
+                if promos:
+                    lines = ['PROMOTIONS EN COURS :']
+                    for p in promos:
+                        desc = (p.description_sale or '').strip().replace('\n', ' ')[:120]
+                        lines.append('- %s : %s' % (p.name, desc))
+                    blocks_optional.append(('promos', '\n'.join(lines)))
+            except Exception:
+                _logger.warning('TecasWhatsappAI: context — promotions query failed')
+
+        # 3. Existing CRM lead — always checked
+        try:
+            partner = self._channel_partner(channel)
+            if partner:
+                lead = self._find_existing_lead(partner)
+                if lead:
+                    stage = lead.stage_id.name if lead.stage_id else 'N/A'
+                    salesman = lead.user_id.name if lead.user_id else 'Non assigné'
+                    last_act = (
+                        lead.activity_date_deadline.strftime('%d/%m/%Y')
+                        if lead.activity_date_deadline else 'N/A'
+                    )
+                    lines = [
+                        'LEAD CRM EXISTANT (ne pas redemander ces infos) :',
+                        '- Nom : %s' % lead.name,
+                        '- Étape : %s' % stage,
+                        '- Commercial : %s' % salesman,
+                        '- Dernière activité : %s' % last_act,
+                    ]
+                    blocks_priority.append(('lead', '\n'.join(lines)))
+        except Exception:
+            _logger.warning('TecasWhatsappAI: context — CRM lead query failed')
+
+        # 4. Business hours
+        if _HOURS_KEYWORDS & set(recent_norm.split()):
+            try:
+                now = datetime.now(_TZ_MOROCCO)
+                weekday = now.weekday()  # 0=Mon … 6=Sun
+                frac_hour = now.hour + now.minute / 60.0
+                if weekday < 5:
+                    open_now = 8.5 <= frac_hour < 18.0
+                elif weekday == 5:
+                    open_now = 8.5 <= frac_hour < 13.0
+                else:
+                    open_now = False
+                status = 'OUVERT — un conseiller est disponible' if open_now else 'FERMÉ en ce moment'
+                lines = [
+                    'HORAIRES D\'OUVERTURE (%s) :' % status,
+                    '- Lun–Ven : 08:30–18:00',
+                    '- Sam : 08:30–13:00',
+                    '- Dim : fermé',
+                ]
+                blocks_priority.append(('hours', '\n'.join(lines)))
+            except Exception:
+                _logger.warning('TecasWhatsappAI: context — business hours computation failed')
+
+        if not blocks_optional and not blocks_priority:
+            return ''
+
+        # Apply token budget (~400 tokens ≈ 1600 chars)
+        CHAR_BUDGET = 1600
+        parts = []
+
+        # Priority blocks first (always kept)
+        for _k, text in blocks_priority:
+            parts.append(text)
+
+        chars_used = sum(len(p) for p in parts)
+
+        # Optional blocks — truncate products first, then promos
+        for key, text in blocks_optional:
+            remaining = CHAR_BUDGET - chars_used
+            if remaining <= 0:
+                break
+            if len(text) <= remaining:
+                parts.append(text)
+                chars_used += len(text)
+            elif key == 'products':
+                # Partial product list
+                lines = text.split('\n')
+                kept = [lines[0]]  # header
+                for line in lines[1:]:
+                    if chars_used + len('\n'.join(kept)) + len(line) + 1 <= CHAR_BUDGET:
+                        kept.append(line)
+                    else:
+                        kept.append('(liste tronquée pour économiser des tokens)')
+                        break
+                truncated = '\n'.join(kept)
+                parts.append(truncated)
+                chars_used += len(truncated)
+            # promos: skip entirely if no room
+
+        if not parts:
+            return ''
+
+        return '\n\n---\nCONTEXTE TEMPS RÉEL :\n' + '\n\n'.join(parts)
+
+    # ------------------------------------------------------------------
     # OpenAI API
     # ------------------------------------------------------------------
 
-    def _call_openai(self, messages, api_key):
+    def _call_openai(self, messages, config, context_block=''):
         """Send messages to OpenAI and return the parsed JSON dict, or None on error."""
+        system_prompt = config.system_prompt
+        if context_block:
+            system_prompt = system_prompt + context_block
+
         payload = json.dumps({
-            'model': _AI_MODEL,
-            'max_tokens': 512,
+            'model': config.ai_model,
+            'max_tokens': config.max_tokens,
             'response_format': {'type': 'json_object'},
-            'messages': [{'role': 'system', 'content': _SYSTEM_PROMPT}] + messages,
+            'messages': [{'role': 'system', 'content': system_prompt}] + messages,
         }).encode('utf-8')
 
         req = urllib.request.Request(
@@ -202,7 +400,7 @@ class TecasWhatsappAI(models.AbstractModel):
             data=payload,
             headers={
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer %s' % api_key,
+                'Authorization': 'Bearer %s' % config.openai_api_key,
             },
             method='POST',
         )
@@ -257,26 +455,18 @@ class TecasWhatsappAI(models.AbstractModel):
     # Round-robin salesman selection
     # ------------------------------------------------------------------
 
-    def _get_next_salesman(self):
+    def _get_next_salesman(self, config):
         """Return the next active res.users from the configured pool (round-robin)."""
-        ICP = self.env['ir.config_parameter'].sudo()
-        raw = ICP.get_param('tecas_whatsapp_ai.salesman_ids', '')
-        ids = [int(x) for x in raw.split(',') if x.strip().isdigit()]
-        if not ids:
+        users = config.salesman_ids.filtered('active')
+        if not users:
             return False
 
-        current = int(ICP.get_param('tecas_whatsapp_ai.last_salesman_index', '-1'))
-        next_idx = (current + 1) % len(ids)
-        ICP.set_param('tecas_whatsapp_ai.last_salesman_index', str(next_idx))
-
-        user = self.env['res.users'].browse(ids[next_idx])
-        if user.exists() and user.active:
-            return user
-        for offset in range(1, len(ids)):
-            candidate_idx = (next_idx + offset) % len(ids)
-            candidate = self.env['res.users'].browse(ids[candidate_idx])
-            if candidate.exists() and candidate.active:
-                ICP.set_param('tecas_whatsapp_ai.last_salesman_index', str(candidate_idx))
+        count = len(users)
+        start = (config.last_salesman_index + 1) % count
+        for offset in range(count):
+            candidate = users[(start + offset) % count]
+            if candidate.active:
+                config.sudo().write({'last_salesman_index': (start + offset) % count})
                 return candidate
         return False
 
@@ -284,12 +474,15 @@ class TecasWhatsappAI(models.AbstractModel):
     # Escalation
     # ------------------------------------------------------------------
 
-    def _escalate(self, channel, msg, raison, salesman, messages):
+    def _escalate(self, channel, msg, raison, salesman, messages, service='unknown'):
         """Assign or create a CRM lead and send a briefing to the salesman."""
         partner = self._channel_partner(channel)
-        lead = self._get_or_create_lead(partner, msg, salesman)
+        lead = self._get_or_create_lead(partner, msg, salesman, service)
         if lead:
-            self._post_lead_briefing(lead, salesman, partner, msg, raison, messages)
+            effective_salesman = lead.user_id or salesman
+            if partner and effective_salesman:
+                partner.sudo().write({'user_id': effective_salesman.id})
+            self._post_lead_briefing(lead, effective_salesman, partner, msg, raison, messages)
         else:
             self._notify_salesman_inbox(salesman, msg, raison, messages)
 
@@ -304,31 +497,67 @@ class TecasWhatsappAI(models.AbstractModel):
             partner = members[:1].partner_id or False
         return partner
 
-    def _get_or_create_lead(self, partner, msg, salesman):
-        """Return the most recent open lead for the contact, or create a new one."""
+    def _find_existing_lead(self, partner):
+        """Return the most recent active CRM lead for this partner, or False.
+
+        Searches by partner first, then falls back to phone to handle cases
+        where the same customer has multiple partner records.
+        """
         if not partner:
             return False
 
         lead = self.env['crm.lead'].sudo().search(
-            [
-                ('partner_id', '=', partner.id),
-                ('active', '=', True),
-                ('probability', '<', 100),
-            ],
+            [('partner_id', '=', partner.id), ('active', '=', True)],
             order='create_date desc',
             limit=1,
         )
+        if not lead:
+            phone = partner.phone or getattr(partner, 'mobile', None)
+            if phone:
+                lead = self.env['crm.lead'].sudo().search(
+                    [('phone', '=', phone), ('active', '=', True)],
+                    order='create_date desc',
+                    limit=1,
+                )
+
+        _logger.info(
+            'TecasWhatsappAI: _find_existing_lead partner=%s phone=%s -> lead=%s user_id=%s',
+            partner.id, partner.phone, lead.id if lead else None,
+            lead.user_id.id if lead and lead.user_id else None,
+        )
+        return lead or False
+
+    def _get_or_create_lead(self, partner, msg, salesman, service='unknown'):
+        """Return the most recent open lead for the contact, or create a new one.
+
+        When a lead already exists, keep the original salesman and update the
+        lead name to reflect the new service. Never overwrite user_id.
+        """
+        if not partner:
+            return False
+
+        service_label = _SERVICE_LABELS.get(service, '')
+        contact_name = partner.name or msg.mobile_number or 'Inconnu'
+        lead_name = (
+            'WhatsApp — %s — %s' % (service_label, contact_name)
+            if service_label else
+            'WhatsApp — Prospect — %s' % contact_name
+        )
+
+        lead = self._find_existing_lead(partner)
         if lead:
-            lead.sudo().user_id = salesman
+            vals = {'name': lead_name}
+            if not lead.user_id and salesman:
+                vals['user_id'] = salesman.id
+            lead.sudo().write(vals)
         else:
             lead = self.env['crm.lead'].sudo().create({
-                'name': 'Prospect WhatsApp -- %s' % (partner.name or msg.mobile_number or 'Inconnu'),
+                'name': lead_name,
                 'partner_id': partner.id,
                 'user_id': salesman.id,
                 'phone': partner.phone or msg.mobile_number or '',
                 'description': (
-                    'Lead genere automatiquement depuis WhatsApp Service Commercial '
-                    '(+212 664-276055) par l\'assistant AI TECAS.'
+                    'Lead genere automatiquement depuis WhatsApp par l\'assistant AI TECAS.'
                 ),
             })
         return lead
@@ -368,7 +597,7 @@ class TecasWhatsappAI(models.AbstractModel):
             convo_html,
         )
         lead.sudo().message_post(
-            body=body,
+            body=Markup(body),
             message_type='comment',
             subtype_xmlid='mail.mt_comment',
             partner_ids=[salesman.partner_id.id],
@@ -386,7 +615,7 @@ class TecasWhatsappAI(models.AbstractModel):
             'font-size:13px;line-height:1.6">%s</div>'
         ) % (msg.mobile_number or 'N/A', raison, convo_html)
         salesman.sudo().partner_id.message_post(
-            body=body,
+            body=Markup(body),
             message_type='comment',
             subtype_xmlid='mail.mt_comment',
         )

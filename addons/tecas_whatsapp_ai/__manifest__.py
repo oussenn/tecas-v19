@@ -19,6 +19,8 @@
     'data': [
         'security/ir.model.access.csv',
         'data/automation.xml',
+        'views/whatsapp_ai_config_views.xml',
+        'views/whatsapp_ai_menus.xml',
     ],
     'installable': True,
     'application': False,

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem
+        id="tecas_whatsapp_ai_bot_menu"
+        name="Bot"
+        parent="whatsapp.whatsapp_menu_main"
+        action="action_tecas_whatsapp_ai_config"
+        sequence="50"
+        groups="whatsapp.group_whatsapp_admin"/>
+
+</odoo>
