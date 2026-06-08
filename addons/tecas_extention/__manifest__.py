@@ -2,8 +2,7 @@
 {
     'name': "tecas_extention",
     'summary': "Tecas Invoice Extensions",
-    'author': "@brahimayad",
-    'website': "ayadbrahim5@gmail.com",
+    'author': "Oussama Ennaciri",
     'category': 'account',
     'version': '19.0.0.1',
     'depends': ['base', 'account', 'sale'],

@@ -6,7 +6,7 @@
         'AI assistant that qualifies incoming WhatsApp leads '
         'on the Service Commercial number and escalates to a salesman when ready.'
     ),
-    'author': 'TECAS ENERGIE SOLAIRE',
+    'author': 'Oussama Ennaciri',
     'website': 'https://tecas.ma',
     'category': 'Sales/CRM',
     'license': 'LGPL-3',
