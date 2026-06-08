@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="whatsapp_ai_bot_config_view_form" model="ir.ui.view">
+        <field name="name">whatsapp.ai.bot.config.form</field>
+        <field name="model">whatsapp.ai.bot.config</field>
+        <field name="arch" type="xml">
+            <form string="Bot" create="false" delete="false">
+                <sheet>
+                    <widget name="web_ribbon" title="Inactive" bg_color="bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="General">
+                            <field name="active" widget="boolean_toggle" string="Bot Enabled"/>
+                            <field name="wa_account_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="AI Settings" name="ai_settings">
+                            <group>
+                                <group string="OpenAI">
+                                    <field name="openai_api_key" password="True"/>
+                                    <field name="ai_model"/>
+                                    <field name="max_tokens"/>
+                                </group>
+                            </group>
+                            <separator string="System Prompt"/>
+                            <field name="system_prompt" nolabel="1" rows="30"/>
+                        </page>
+                        <page string="Salesman Assignment" name="salesman_assignment">
+                            <group>
+                                <field name="salesman_ids" widget="many2many_tags"
+                                       domain="[('share','=',False),('active','=',True)]"
+                                       options="{'no_create': True}"/>
+                                <field name="last_salesman_index" readonly="1"/>
+                                <field name="human_takeover_days"/>
+                            </group>
+                            <p class="text-muted" style="margin-top:8px">
+                                New leads are assigned in round-robin order across the salesman pool.
+                                Set <b>Last Index</b> to <b>-1</b> to restart from the first salesman.
+                                Set <b>Human Takeover Window</b> to <b>0</b> to disable (AI always responds). Any value above 0 silences the AI for that many days after a salesman replies, then it resumes automatically.
+                            </p>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_whatsapp_ai_bot_config" model="ir.actions.server">
+        <field name="name">Bot</field>
+        <field name="model_id" ref="model_whatsapp_ai_bot_config"/>
+        <field name="state">code</field>
+        <field name="code">action = env['whatsapp.ai.bot.config'].action_open()</field>
+    </record>
+
+</odoo>
