@@ -1,0 +1,5 @@
+<odoo>
+    <record id="group_see_margin" model="res.groups">
+        <field name="name">Voir la Marge</field>
+    </record>
+</odoo>

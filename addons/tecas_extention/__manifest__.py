@@ -7,6 +7,7 @@
     'version': '19.0.0.1',
     'depends': ['base', 'account', 'sale'],
     'data': [
+        'security/groups.xml',
         'security/ir.model.access.csv',
         'report/invoice_inherited.xml',
         'report/report_layout_inherited.xml',

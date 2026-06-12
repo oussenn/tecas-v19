@@ -11,11 +11,29 @@ from odoo import api, models
 _logger = logging.getLogger(__name__)
 
 _AI_API_URL = 'https://api.openai.com/v1/chat/completions'
+_WA_API_BASE = 'https://graph.facebook.com/v23.0'
 
 _PRODUCT_KEYWORDS = {'panneau', 'batterie', 'onduleur', 'materiel', 'matériel',
                      'stock', 'disponible', 'référence', 'reference'}
 _PROMO_KEYWORDS   = {'promo', 'promotion', 'offre', 'remise', 'réduction', 'reduction'}
 _HOURS_KEYWORDS   = {'conseiller', 'disponible', 'rappel', 'horaire', 'quand', 'urgent'}
+
+_PROFILE_KEYWORDS_RE = re.compile(
+    r'\b(Revendeur|Reseller|موزع)\b|\b(Installateur|Installer|مركب|مثبت)',
+    re.IGNORECASE,
+)
+
+_ESCALATION_CLOSING_PATTERNS = [
+    'conseiller va vous contacter',
+    'equipe va vous contacter',
+    'merci pour vos informations',
+    'prendre contact avec vous',
+    'vous serez contact',
+    'nous vous contacterons',
+    'vous contacter dans les plus brefs',
+    'notre equipe prendra contact',
+]
+
 
 _SERVICE_LABELS = {
     'residential':         'Projet résidentiel',
@@ -29,6 +47,8 @@ _SERVICE_LABELS = {
     'quick_quote':         'Devis rapide',
     'showroom':            'Visite showroom',
     'advisor':             'Parler à un conseiller',
+    'revendeur':           'Revendeur',
+    'installateur':        'Installateur',
 }
 
 # Morocco is UTC+1 year-round (no DST)
@@ -38,6 +58,16 @@ _TZ_MOROCCO = timezone(timedelta(hours=1))
 class WhatsappAIBot(models.AbstractModel):
     _name = 'whatsapp.ai.bot'
     _description = 'WhatsApp AI Bot Handler'
+
+    _VOICE_FALLBACK_FR = (
+        "Bonjour ! Bienvenue chez TECAS Energie Solaire.\n\n"
+        "Je ne peux pas traiter les messages vocaux. "
+        "Veuillez taper votre demande par écrit.\n\n"
+        "Pour mieux vous orienter, êtes-vous :\n"
+        "1. Client (particulier ou entreprise)\n"
+        "2. Revendeur (négoce, distribution)\n"
+        "3. Installateur (technicien, entreprise d'installation)"
+    )
 
     @api.model
     def handle_incoming_message(self, whatsapp_msg_id):
@@ -66,6 +96,13 @@ class WhatsappAIBot(models.AbstractModel):
                 )
                 return
 
+            # Voice / media message — no text body → send fixed French welcome directly
+            msg_body = self._strip_html(msg.mail_message_id.body or '')
+            if not msg_body:
+                _logger.info('WhatsappAIBot: voice/media message on channel %s — sending French welcome', channel.id)
+                self._post_whatsapp_reply(channel, self._VOICE_FALLBACK_FR)
+                return
+
             if not config.openai_api_key:
                 _logger.error(
                     'WhatsappAIBot: OpenAI API key not set -- configure it in WhatsApp > Bot'
@@ -81,6 +118,20 @@ class WhatsappAIBot(models.AbstractModel):
                 return
 
             context_block = self._build_context_block(channel, messages)
+
+            # If the last bot message was an escalation closing, force a full reset
+            if self._was_escalation_closing(messages):
+                _logger.info('WhatsappAIBot: post-escalation reset injected for channel %s', channel.id)
+                context_block = (context_block or '') + (
+                    '\n\n[INSTRUCTION PRIORITAIRE — RESET COMPLET] '
+                    'Ta derniere reponse etait une cloture d\'escalade. '
+                    'Le present message du client est un TOUT PREMIER CONTACT. '
+                    'Reponds UNIQUEMENT avec un message de bienvenue chaleureux '
+                    'suivi de la question de profil : '
+                    '1. Client / 2. Revendeur / 3. Installateur. '
+                    'N\'utilise pas le contexte, le flux ou l\'option de la conversation precedente.'
+                )
+
             result = self._call_openai(messages, config, context_block)
             if result is None:
                 return
@@ -158,8 +209,8 @@ class WhatsappAIBot(models.AbstractModel):
         - 0   : disabled — AI always responds
         - N>0 : AI stays silent for N days after the last human reply, then resumes
         """
-        days = config.human_takeover_days
-        if days == 0:
+        hours = config.human_takeover_hours
+        if hours == 0:
             return False
 
         bot_partner_id = self.env.ref('base.partner_root').id
@@ -168,7 +219,7 @@ class WhatsappAIBot(models.AbstractModel):
         if customer_partner:
             excluded_ids.append(customer_partner.id)
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
         domain = [
             ('res_id', '=', channel.id),
             ('model', '=', 'discuss.channel'),
@@ -183,6 +234,168 @@ class WhatsappAIBot(models.AbstractModel):
     # ------------------------------------------------------------------
     # Conversation building
     # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # Interactive message helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _split_header_and_list(reply):
+        """Return (header_str, [(id_str, title_str), ...]) splitting at the first numbered item.
+
+        Strips '0.' items and '(Répondez...)' footers.
+        """
+        lines = reply.split('\n')
+        first_idx = None
+        for i, line in enumerate(lines):
+            if re.match(r'^\s*[1-9][0-9]?\s*[\.。)]\s*\S', line):
+                first_idx = i
+                break
+        if first_idx is None:
+            return reply.strip(), []
+        header = '\n'.join(
+            l.strip() for l in lines[:first_idx]
+            if l.strip() and not re.match(r'^\(R[ée]pondez', l.strip())
+        ).strip()
+        items = []
+        for line in lines[first_idx:]:
+            s = line.strip()
+            if not s or re.match(r'^\(R[ée]pondez', s):
+                continue
+            m = re.match(r'^([1-9][0-9]?)\s*[\.。)]\s*(.+)', s)
+            if m:
+                items.append((m.group(1), m.group(2).strip()))
+        return header, items
+
+    @staticmethod
+    def _clean_label(text, max_len):
+        """Strip parenthetical notes and truncate to max_len characters."""
+        clean = re.split(r'\s*[\(（/]', text)[0].strip()
+        if not clean:
+            clean = text.strip()
+        if len(clean) <= max_len:
+            return clean
+        truncated = clean[:max_len].rsplit(' ', 1)[0]
+        return truncated if len(truncated) >= max_len // 2 else clean[:max_len]
+
+    def _classify_reply(self, reply):
+        """Return 'profile' | 'client_menu' | 'plain' based on structure of the reply."""
+        _, items = self._split_header_and_list(reply)
+        n = len(items)
+        if n == 3 and _PROFILE_KEYWORDS_RE.search(reply):
+            return 'profile'
+        if n >= 7:
+            return 'client_menu'
+        return 'plain'
+
+    def _log_outbound_for_history(self, channel, body):
+        """Create mail.message (comment) + whatsapp.message (outbound) for AI history.
+
+        Used when the WhatsApp send is done via direct API (interactive messages) so
+        Odoo does not duplicate the text send but still tracks the exchange for context.
+        """
+        mail_msg = channel.sudo().message_post(
+            body=body,
+            message_type='comment',
+            subtype_xmlid='mail.mt_comment',
+            author_id=self.env.ref('base.partner_root').id,
+        )
+        if mail_msg:
+            self.env['whatsapp.message'].sudo().create({
+                'mail_message_id': mail_msg.id,
+                'mobile_number': '+' + str(getattr(channel, 'whatsapp_number', '') or ''),
+                'message_type': 'outbound',
+                'wa_account_id': channel.wa_account_id.id if channel.wa_account_id else False,
+                'state': 'sent',
+            })
+
+    def _send_interactive_profile(self, channel, header, items):
+        """Send a 3-button interactive message for the Client/Revendeur/Installateur choice."""
+        account = channel.wa_account_id
+        if not account or not account.phone_uid:
+            return
+        number = str(getattr(channel, 'whatsapp_number', '') or '')
+        if not number:
+            return
+        body_text = (header or 'Pour mieux vous orienter, êtes-vous :')[:1024]
+        buttons = [
+            {'type': 'reply', 'reply': {'id': iid, 'title': self._clean_label(title, 20)}}
+            for iid, title in items[:3]
+        ]
+        if not buttons:
+            return
+        payload = json.dumps({
+            'messaging_product': 'whatsapp',
+            'recipient_type': 'individual',
+            'to': number,
+            'type': 'interactive',
+            'interactive': {
+                'type': 'button',
+                'body': {'text': body_text},
+                'action': {'buttons': buttons},
+            },
+        }).encode('utf-8')
+        self._wa_post(account, payload)
+
+    def _send_interactive_list_menu(self, channel, header, items):
+        """Send a list-type interactive message for the 8-option client menu.
+
+        Adds '↩ Recommencer' as the last row (id='0') so the restart button is built in.
+        """
+        account = channel.wa_account_id
+        if not account or not account.phone_uid:
+            return
+        number = str(getattr(channel, 'whatsapp_number', '') or '')
+        if not number:
+            return
+        body_text = (header or 'Comment puis-je vous aider ?')[:1024]
+        rows = [
+            {'id': iid, 'title': self._clean_label(title, 24)}
+            for iid, title in items[:9]
+        ]
+        rows.append({'id': '0', 'title': '↩ Recommencer'})
+        payload = json.dumps({
+            'messaging_product': 'whatsapp',
+            'recipient_type': 'individual',
+            'to': number,
+            'type': 'interactive',
+            'interactive': {
+                'type': 'list',
+                'body': {'text': body_text},
+                'action': {
+                    'button': 'Voir les options',
+                    'sections': [{'title': 'Services', 'rows': rows}],
+                },
+            },
+        }).encode('utf-8')
+        self._wa_post(account, payload)
+
+    def _wa_post(self, account, payload):
+        """POST payload to the WhatsApp Business API for the given account."""
+        token = account.sudo().token
+        req = urllib.request.Request(
+            '%s/%s/messages' % (_WA_API_BASE, account.phone_uid),
+            data=payload,
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer %s' % token,
+            },
+            method='POST',
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            resp.read()
+
+    def _was_escalation_closing(self, messages):
+        """Return True if the last assistant message is an escalation closing."""
+        for msg in reversed(messages):
+            if msg['role'] == 'assistant':
+                content_lower = (
+                    msg['content'].lower()
+                    .replace('é', 'e').replace('è', 'e').replace('ê', 'e')
+                    .replace('à', 'a').replace('â', 'a')
+                )
+                return any(p in content_lower for p in _ESCALATION_CLOSING_PATTERNS)
+        return False
 
     def _build_messages(self, channel):
         """Return the last 20 messages as an OpenAI-compatible list of dicts."""
@@ -291,7 +504,22 @@ class WhatsappAIBot(models.AbstractModel):
             except Exception:
                 _logger.warning('WhatsappAIBot: context — promotions query failed')
 
-        # 3. Existing CRM lead — always checked
+        # 3. Customer profile — always included
+        try:
+            partner = self._channel_partner(channel)
+            if partner:
+                phone = partner.phone or getattr(partner, 'mobile', None)
+                profile_lines = ['PROFIL CLIENT (informations deja connues, ne pas les redemander) :']
+                if partner.name:
+                    profile_lines.append('- Nom : %s' % partner.name)
+                if phone:
+                    profile_lines.append('- Telephone WhatsApp : %s' % phone)
+                if len(profile_lines) > 1:
+                    blocks_priority.append(('client_profile', '\n'.join(profile_lines)))
+        except Exception:
+            _logger.warning('WhatsappAIBot: context — customer profile query failed')
+
+        # 4. Existing CRM lead — always checked
         try:
             partner = self._channel_partner(channel)
             if partner:
@@ -440,16 +668,63 @@ class WhatsappAIBot(models.AbstractModel):
     # ------------------------------------------------------------------
 
     def _post_whatsapp_reply(self, channel, reply):
-        """Post the AI-generated reply to the WhatsApp discuss channel."""
+        """Post the AI-generated reply to the WhatsApp discuss channel.
+
+        - Profile question (3 choices) → interactive 3-button message (no text bubble)
+        - Client menu (8 choices)      → interactive list message with built-in restart row
+        - Everything else              → plain text + separate restart button
+        """
+        msg_class = self._classify_reply(reply)
         try:
-            channel.sudo().message_post(
-                body=reply,
-                message_type='whatsapp_message',
-                subtype_xmlid='mail.mt_comment',
-                author_id=self.env.ref('base.partner_root').id,
-            )
+            if msg_class == 'profile':
+                header, items = self._split_header_and_list(reply)
+                self._log_outbound_for_history(channel, reply)
+                self._send_interactive_profile(channel, header, items)
+            elif msg_class == 'client_menu':
+                header, items = self._split_header_and_list(reply)
+                self._log_outbound_for_history(channel, reply)
+                self._send_interactive_list_menu(channel, header, items)
+            else:
+                self._log_outbound_for_history(channel, reply)
+                self._send_plain_with_restart(channel, reply)
         except Exception:
             _logger.exception('WhatsappAIBot: Failed to post WhatsApp reply.')
+
+    def _send_plain_with_restart(self, channel, reply):
+        """Send reply text as an interactive button message with an ↩ Recommencer quick-reply.
+
+        Combines the text and the restart button into one bubble so no "─" separator appears.
+        """
+        try:
+            account = channel.wa_account_id
+            if not account or not account.phone_uid:
+                return
+            number = str(getattr(channel, 'whatsapp_number', '') or '')
+            if not number:
+                return
+            body_text = reply[:1024]
+            if len(reply) > 1024:
+                body_text = reply[:1021] + '…'
+            payload = json.dumps({
+                'messaging_product': 'whatsapp',
+                'recipient_type': 'individual',
+                'to': number,
+                'type': 'interactive',
+                'interactive': {
+                    'type': 'button',
+                    'body': {'text': body_text},
+                    'action': {
+                        'buttons': [{'type': 'reply', 'reply': {'id': '0', 'title': '↩ Recommencer'}}],
+                    },
+                },
+            }).encode('utf-8')
+            self._wa_post(account, payload)
+            _logger.info('WhatsappAIBot: plain+restart button sent for channel %s', channel.id)
+        except Exception:
+            _logger.warning(
+                'WhatsappAIBot: Failed to send plain+restart for channel %s', channel.id,
+                exc_info=True,
+            )
 
     # ------------------------------------------------------------------
     # Round-robin salesman selection

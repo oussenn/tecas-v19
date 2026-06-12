@@ -37,7 +37,7 @@
                                        domain="[('share','=',False),('active','=',True)]"
                                        options="{'no_create': True}"/>
                                 <field name="last_salesman_index" readonly="1"/>
-                                <field name="human_takeover_days"/>
+                                <field name="human_takeover_hours"/>
                             </group>
                             <p class="text-muted" style="margin-top:8px">
                                 New leads are assigned in round-robin order across the salesman pool.
