@@ -576,18 +576,18 @@ class WhatsappAIBot(models.AbstractModel):
             except Exception:
                 _logger.warning('WhatsappAIBot: context — promotions query failed')
 
-        # 3. Customer profile — always included
+        # 3. Customer profile — only inject phone (already known from WhatsApp, never ask again).
+        # Name and city are NOT injected here so the AI always asks for them in the branch flow.
         try:
             partner = self._channel_partner(channel)
             if partner:
                 phone = partner.phone or getattr(partner, 'mobile', None)
-                profile_lines = ['PROFIL CLIENT (informations deja connues, ne pas les redemander) :']
-                if partner.name:
-                    profile_lines.append('- Nom : %s' % partner.name)
                 if phone:
-                    profile_lines.append('- Telephone WhatsApp : %s' % phone)
-                if len(profile_lines) > 1:
-                    blocks_priority.append(('client_profile', '\n'.join(profile_lines)))
+                    blocks_priority.append((
+                        'client_profile',
+                        'PROFIL CLIENT :\n'
+                        '- Telephone WhatsApp : %s (deja connu, ne JAMAIS le redemander)' % phone,
+                    ))
         except Exception:
             _logger.warning('WhatsappAIBot: context — customer profile query failed')
 
