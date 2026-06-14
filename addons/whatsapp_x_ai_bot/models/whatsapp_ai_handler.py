@@ -23,6 +23,8 @@ _PROFILE_KEYWORDS_RE = re.compile(
     re.IGNORECASE,
 )
 
+# No longer used for classification but kept for potential future reference
+
 _ESCALATION_CLOSING_PATTERNS = [
     'conseiller va vous contacter',
     'equipe va vous contacter',
@@ -36,20 +38,37 @@ _ESCALATION_CLOSING_PATTERNS = [
 
 
 _SERVICE_LABELS = {
-    'residential':         'Projet résidentiel',
-    'pumping':             'Pompage solaire',
-    'industrial':          'Projet industriel/commercial',
-    'equipment_panels':    'Achat matériel — Panneaux solaires',
-    'equipment_batteries': 'Achat matériel — Batteries lithium',
-    'equipment_inverters': 'Achat matériel — Onduleurs',
-    'equipment_cables':    'Achat matériel — Câbles et accessoires',
-    'sav':                 'SAV',
-    'quick_quote':         'Devis rapide',
-    'showroom':            'Visite showroom',
-    'advisor':             'Parler à un conseiller',
-    'revendeur':           'Revendeur',
-    'installateur':        'Installateur',
+    'solar_installation':   'Installation solaire',
+    'pumping':              'Pompage solaire agricole',
+    'industrial':           'Projet industriel/professionnel',
+    'equipment_panels':     'Achat matériel — Panneaux solaires',
+    'equipment_inverters':  'Achat matériel — Onduleurs',
+    'equipment_batteries':  'Achat matériel — Batteries',
+    'equipment_structure':  'Achat matériel — Structures de fixation',
+    'equipment_cables':     'Achat matériel — Câbles et accessoires',
+    'equipment_multi':      'Achat matériel — Commande mixte',
+    'b2b_partner':          'Partenaire B2B (Installateur/Revendeur)',
+    'sav':                  'SAV',
+    'advisor':              'Prise de contact conseiller',
+    # legacy codes — kept for backward compatibility
+    'residential':          'Installation solaire',
+    'quick_quote':          'Devis rapide',
+    'showroom':             'Visite showroom',
+    'revendeur':            'Revendeur',
+    'installateur':         'Installateur',
 }
+
+_COMPANY_SIGNATURE = (
+    "\n\n"
+    "📍 Showroom TECAS Énergie Solaire\n"
+    "Lot N°10 Lotissement Polygone\n"
+    "Route des Zenata km 10.5, Zone Industrielle Ain Sebaa\n"
+    "Casablanca – Maroc\n\n"
+    "📞 +212 520 854 141\n"
+    "📧 info@tecas.ma\n"
+    "🌐 tecas.ma\n\n"
+    "🌞 Venez visiter notre showroom et découvrir nos installations solaires en fonctionnement réel."
+)
 
 # Morocco is UTC+1 year-round (no DST)
 _TZ_MOROCCO = timezone(timedelta(hours=1))
@@ -63,10 +82,14 @@ class WhatsappAIBot(models.AbstractModel):
         "Bonjour ! Bienvenue chez TECAS Energie Solaire.\n\n"
         "Je ne peux pas traiter les messages vocaux. "
         "Veuillez taper votre demande par écrit.\n\n"
-        "Pour mieux vous orienter, êtes-vous :\n"
-        "1. Client (particulier ou entreprise)\n"
-        "2. Revendeur (négoce, distribution)\n"
-        "3. Installateur (technicien, entreprise d'installation)"
+        "Comment puis-je vous aider ?\n"
+        "1. Installation solaire\n"
+        "2. Pompage solaire agricole\n"
+        "3. Projet industriel ou professionnel\n"
+        "4. Achat de matériel solaire\n"
+        "5. Installateur / Revendeur\n"
+        "6. Service Après-Vente (SAV)\n"
+        "7. Contacter un conseiller"
     )
 
     @api.model
@@ -164,7 +187,7 @@ class WhatsappAIBot(models.AbstractModel):
                         'WhatsappAIBot: No salesmen configured -- add users in WhatsApp > Bot'
                     )
                 if reply:
-                    self._post_whatsapp_reply(channel, reply)
+                    self._post_whatsapp_reply(channel, reply + _COMPANY_SIGNATURE, is_escalation=True)
 
         except Exception:
             _logger.exception(
@@ -243,28 +266,72 @@ class WhatsappAIBot(models.AbstractModel):
     def _split_header_and_list(reply):
         """Return (header_str, [(id_str, title_str), ...]) splitting at the first numbered item.
 
-        Strips '0.' items and '(Répondez...)' footers.
+        Handles three AI output formats:
+        - One option per line:   "1. Option A\\n2. Option B"
+        - Multiple per line:     "1. A  2. B  3. C  4. D  5. E"
+        - Option inside header:  "a) Question : 1. A\\n2. B\\n3. C"
+        Strips '0.' items and '(Repondez...)' footers.
         """
+        # Extracts all "N. text" items from within a single line
+        _inline_re = re.compile(
+            r'([1-9][0-9]?)[\.。)]\s+(.+?)(?=\s+[1-9][0-9]?[\.。)]|\s*$)'
+        )
+
+        def _items_from_line(s):
+            found = _inline_re.findall(s)
+            return [(num, text.strip()) for num, text in found] if found else []
+
         lines = reply.split('\n')
         first_idx = None
         for i, line in enumerate(lines):
             if re.match(r'^\s*[1-9][0-9]?\s*[\.。)]\s*\S', line):
                 first_idx = i
                 break
+
         if first_idx is None:
+            # No line starts with a number — scan for inline "1. option" inside any line
+            for i, line in enumerate(lines):
+                s = line.strip()
+                if not s or re.match(r'^\(R[ée]pondez', s):
+                    continue
+                first_pos = re.search(r'(?<!\d)\b1[\.。)]\s', s)
+                if first_pos:
+                    inline_items = _inline_re.findall(s[first_pos.start():])
+                    if len(inline_items) >= 2:
+                        question_part = s[:first_pos.start()].rstrip(':').strip()
+                        before = [
+                            l.strip() for l in lines[:i]
+                            if l.strip() and not re.match(r'^\(R[ée]pondez', l.strip())
+                        ]
+                        if question_part:
+                            before.append(question_part)
+                        return '\n'.join(before).strip(), [(n, t.strip()) for n, t in inline_items]
             return reply.strip(), []
-        header = '\n'.join(
+
+        header_lines = [
             l.strip() for l in lines[:first_idx]
             if l.strip() and not re.match(r'^\(R[ée]pondez', l.strip())
-        ).strip()
+        ]
         items = []
         for line in lines[first_idx:]:
             s = line.strip()
             if not s or re.match(r'^\(R[ée]pondez', s):
                 continue
-            m = re.match(r'^([1-9][0-9]?)\s*[\.。)]\s*(.+)', s)
-            if m:
-                items.append((m.group(1), m.group(2).strip()))
+            items.extend(_items_from_line(s))
+
+        # If list doesn't start at 1, the last header line may contain inline "1. Option"
+        # (e.g. "a) Puissance : 1. 550W" when options 2+ are on separate lines)
+        if items and items[0][0] != '1' and header_lines:
+            last = header_lines[-1]
+            m2 = re.search(r':\s*(1[\.。)]\s*(.+))$', last)
+            if m2:
+                option_text = re.split(r'\s+\d', m2.group(2))[0].strip()
+                items.insert(0, ('1', option_text))
+                header_lines[-1] = last[:m2.start()].rstrip(':').strip()
+                if not header_lines[-1]:
+                    header_lines.pop()
+
+        header = '\n'.join(header_lines).strip()
         return header, items
 
     @staticmethod
@@ -279,12 +346,17 @@ class WhatsappAIBot(models.AbstractModel):
         return truncated if len(truncated) >= max_len // 2 else clean[:max_len]
 
     def _classify_reply(self, reply):
-        """Return 'profile' | 'client_menu' | 'plain' based on structure of the reply."""
+        """Return 'profile' | 'client_menu' | 'plain' based on numbered list structure.
+
+        2-3 items  → interactive quick-reply buttons ('profile' path)
+        4-10 items → interactive list message ('client_menu' path)
+        0-1 items  → plain text with restart button
+        """
         _, items = self._split_header_and_list(reply)
         n = len(items)
-        if n == 3 and _PROFILE_KEYWORDS_RE.search(reply):
+        if 2 <= n <= 3:
             return 'profile'
-        if n >= 7:
+        if n >= 4:
             return 'client_menu'
         return 'plain'
 
@@ -353,7 +425,7 @@ class WhatsappAIBot(models.AbstractModel):
             {'id': iid, 'title': self._clean_label(title, 24)}
             for iid, title in items[:9]
         ]
-        rows.append({'id': '0', 'title': '↩ Recommencer'})
+        rows.append({'id': '0', 'title': 'Recommencer'})
         payload = json.dumps({
             'messaging_product': 'whatsapp',
             'recipient_type': 'individual',
@@ -667,12 +739,13 @@ class WhatsappAIBot(models.AbstractModel):
     # Reply posting
     # ------------------------------------------------------------------
 
-    def _post_whatsapp_reply(self, channel, reply):
+    def _post_whatsapp_reply(self, channel, reply, is_escalation=False):
         """Post the AI-generated reply to the WhatsApp discuss channel.
 
-        - Profile question (3 choices) → interactive 3-button message (no text bubble)
-        - Client menu (8 choices)      → interactive list message with built-in restart row
-        - Everything else              → plain text + separate restart button
+        - Profile question (2-3 choices) → interactive button message
+        - Menu (4+ choices)              → interactive list message with built-in restart row
+        - Escalation closing             → plain text + "Recommencer" button
+        - Mid-flow question              → plain text only (no button — avoids accidental restart)
         """
         msg_class = self._classify_reply(reply)
         try:
@@ -686,7 +759,10 @@ class WhatsappAIBot(models.AbstractModel):
                 self._send_interactive_list_menu(channel, header, items)
             else:
                 self._log_outbound_for_history(channel, reply)
-                self._send_plain_with_restart(channel, reply)
+                if is_escalation:
+                    self._send_plain_with_restart(channel, reply)
+                else:
+                    self._send_pure_text(channel, reply)
         except Exception:
             _logger.exception('WhatsappAIBot: Failed to post WhatsApp reply.')
 
@@ -714,7 +790,7 @@ class WhatsappAIBot(models.AbstractModel):
                     'type': 'button',
                     'body': {'text': body_text},
                     'action': {
-                        'buttons': [{'type': 'reply', 'reply': {'id': '0', 'title': '↩ Recommencer'}}],
+                        'buttons': [{'type': 'reply', 'reply': {'id': '0', 'title': 'Recommencer'}}],
                     },
                 },
             }).encode('utf-8')
@@ -723,6 +799,30 @@ class WhatsappAIBot(models.AbstractModel):
         except Exception:
             _logger.warning(
                 'WhatsappAIBot: Failed to send plain+restart for channel %s', channel.id,
+                exc_info=True,
+            )
+
+    def _send_pure_text(self, channel, reply):
+        """Send reply as a plain WhatsApp text message with no interactive elements."""
+        try:
+            account = channel.wa_account_id
+            if not account or not account.phone_uid:
+                return
+            number = str(getattr(channel, 'whatsapp_number', '') or '')
+            if not number:
+                return
+            body_text = reply[:4096]
+            payload = json.dumps({
+                'messaging_product': 'whatsapp',
+                'recipient_type': 'individual',
+                'to': number,
+                'type': 'text',
+                'text': {'body': body_text},
+            }).encode('utf-8')
+            self._wa_post(account, payload)
+        except Exception:
+            _logger.warning(
+                'WhatsappAIBot: Failed to send pure text for channel %s', channel.id,
                 exc_info=True,
             )
 
