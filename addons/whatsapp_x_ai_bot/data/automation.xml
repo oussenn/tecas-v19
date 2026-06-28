@@ -1,2 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo/>
+<odoo>
+    <record id="ir_cron_whatsapp_followup_nudge" model="ir.cron">
+        <field name="name">WhatsApp AI: Follow-up nudge</field>
+        <field name="cron_name">WhatsApp AI: Follow-up nudge (stalled conversations)</field>
+        <field name="model_id" ref="whatsapp_x_ai_bot.model_whatsapp_ai_bot_config"/>
+        <field name="state">code</field>
+        <field name="code">model.env['whatsapp.ai.bot'].send_followup_nudges()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">minutes</field>
+        <field name="active">True</field>
+    </record>
+</odoo>
