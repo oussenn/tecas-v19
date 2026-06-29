@@ -17,12 +17,16 @@ class WhatsappAccountInteractiveHook(models.Model):
                 itype = interactive.get('type')
                 if itype == 'button_reply':
                     btn_id = interactive['button_reply'].get('id', '0')
+                    btn_title = interactive['button_reply'].get('title') or btn_id
+                    # Use title as the message text so Odoo chatter shows "Solar installation"
+                    # instead of "1". The AI also benefits from the descriptive text.
                     msg['type'] = 'button'
-                    msg['button'] = {'text': btn_id}
-                    _logger.info('WhatsappAIBot: button_reply -> id=%s', btn_id)
+                    msg['button'] = {'text': btn_title}
+                    _logger.info('WhatsappAIBot: button_reply -> id=%s title=%s', btn_id, btn_title)
                 elif itype == 'list_reply':
                     row_id = interactive['list_reply'].get('id', '0')
+                    row_title = interactive['list_reply'].get('title') or row_id
                     msg['type'] = 'button'
-                    msg['button'] = {'text': row_id}
-                    _logger.info('WhatsappAIBot: list_reply -> id=%s', row_id)
+                    msg['button'] = {'text': row_title}
+                    _logger.info('WhatsappAIBot: list_reply -> id=%s title=%s', row_id, row_title)
         return super()._process_messages(value)

@@ -1,13 +1,13 @@
 /** @odoo-module **/
 
-import VariantMixin from '@website_sale_stock/js/variant_mixin';
+import { patch } from '@web/core/utils/patch';
+import { WebsiteSale } from '@website_sale/interactions/website_sale';
 
-const _orig = VariantMixin._onChangeCombinationStock;
-
-VariantMixin._onChangeCombinationStock = async function (ev, parent, combination) {
-    if (!this.el) return;
-    if (!combination.is_storable && !('max_combo_quantity' in combination)) return;
-    const availMsg = this.el.querySelector('div.availability_messages');
-    if (!availMsg) return;
-    return _orig.call(this, ev, parent, combination);
-};
+patch(WebsiteSale.prototype, {
+    async _onChangeCombinationStock(ev, parent, combination) {
+        if (!this.el || !parent) return;
+        if (!parent.querySelector('#o_wsale_cta_wrapper')) return;
+        if (!this.el.querySelector('div.availability_messages')) return;
+        return super._onChangeCombinationStock(ev, parent, combination);
+    }
+});

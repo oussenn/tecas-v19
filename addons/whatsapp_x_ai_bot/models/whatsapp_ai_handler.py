@@ -666,7 +666,16 @@ class WhatsappAIBot(models.AbstractModel):
                 if not header_lines[-1]:
                     header_lines.pop()
 
-        return '\n'.join(header_lines).strip(), items
+        # A numbered line whose text ends with "?" is the question itself, not a choice.
+        # Move it to the header to avoid duplicate IDs (e.g. "1. House" and "1. What type?").
+        real_items = []
+        for iid, title in items:
+            if title.strip().endswith('?') or title.strip().endswith('؟'):
+                header_lines.append(title)
+            else:
+                real_items.append((iid, title))
+
+        return '\n'.join(header_lines).strip(), real_items
 
     @staticmethod
     def _clean_label(text, max_len):
@@ -679,12 +688,19 @@ class WhatsappAIBot(models.AbstractModel):
 
     def _log_outbound_for_history(self, channel, body):
         """Create mail.message + whatsapp.message records for AI context tracking."""
-        mail_msg = channel.sudo().message_post(
-            body=body,
-            message_type='comment',
-            subtype_xmlid='mail.mt_comment',
-            author_id=self.env.ref('base.partner_root').id,
-        )
+        from markupsafe import Markup, escape
+        # Use whatsapp_message type so the chatter orders bot replies AFTER the user message.
+        # Create mail.message directly to bypass discuss.channel.message_post(), which would
+        # auto-create an outbound whatsapp.message and call _send_message() (double-send).
+        html_body = Markup('<p>%s</p>') % escape(body).replace('\n', Markup('<br/>'))
+        mail_msg = self.env['mail.message'].sudo().create({
+            'body': html_body,
+            'model': 'discuss.channel',
+            'res_id': channel.id,
+            'message_type': 'whatsapp_message',
+            'subtype_id': self.env.ref('mail.mt_comment').id,
+            'author_id': self.env.ref('base.partner_root').id,
+        })
         if mail_msg:
             self.env['whatsapp.message'].sudo().create({
                 'mail_message_id': mail_msg.id,
