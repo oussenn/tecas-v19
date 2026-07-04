@@ -13,10 +13,33 @@ _logger = logging.getLogger(__name__)
 _AI_API_URL = 'https://api.openai.com/v1/chat/completions'
 _WA_API_BASE = 'https://graph.facebook.com/v23.0'
 
-_PRODUCT_KEYWORDS = {'panneau', 'batterie', 'onduleur', 'materiel', 'matériel',
-                     'stock', 'disponible', 'référence', 'reference'}
-_PROMO_KEYWORDS   = {'promo', 'promotion', 'offre', 'remise', 'réduction', 'reduction'}
-_HOURS_KEYWORDS   = {'conseiller', 'disponible', 'rappel', 'horaire', 'quand', 'urgent'}
+# Gap in hours between two messages that marks a new session boundary.
+# Any silence >= this value means the next message starts a fresh context.
+_SESSION_GAP_HOURS = 4
+
+# Product-related triggers (French + Darija latin + Arabic)
+_PRODUCT_KEYWORDS = {
+    'panneau', 'panneaux', 'panel', 'batterie', 'batteries', 'onduleur', 'onduleurs',
+    'materiel', 'matériel', 'stock', 'disponible', 'référence', 'reference',
+    'pompe', 'cable', 'câble', 'structure', 'kit', 'jinko', 'canadian', 'huawei',
+    'deye', 'sungrow', 'lithium', 'lifepo', 'gel', 'watt', 'kwc', 'solaire',
+    'variateur', 'variateurs', 'vfd', 'must', 'solplanet', 'solax',
+    # Darija intent keywords (I want/need → likely product query)
+    'kasni', 'khassni', 'bghit', 'bghyt', 'bghi', 'kaini', 'dyl', 'dyalhom',
+    # Darija for inverter/VFD (common in pompage context)
+    'fachi', 'fishi', 'fachi', 'محول',
+    # Arabic product keywords
+    'لوحة', 'الواح', 'ألواح', 'بطارية', 'بطاريات', 'انفرتر', 'منظومة', 'طاقة', 'شمسية',
+}
+# Price-related triggers including Darija latin + Arabic script
+_PRICE_KEYWORDS = {
+    'prix', 'price', 'tarif', 'tarifs', 'combien', 'bch7al', 'bchhal', 'chhal',
+    'thaman', 'cout', 'coût', 'kdam', 'b7al', 'wach3and', 'coute', 'coûte',
+    'valent', 'vaut', 'cher', 'budget',
+    # Arabic script price keywords
+    'تمن', 'تمان', 'ثمن', 'شحال', 'بشحال', 'التمن', 'الثمن', 'السعر', 'سعر', 'بكام',
+}
+_HOURS_KEYWORDS = {'conseiller', 'disponible', 'rappel', 'horaire', 'quand', 'urgent'}
 
 # Patterns that identify an escalation closing in bot messages
 _ESCALATION_CLOSING_PATTERNS = [
@@ -102,17 +125,9 @@ class WhatsappAIBot(models.AbstractModel):
     _description = 'WhatsApp AI Bot Handler'
 
     _VOICE_FALLBACK_FR = (
-        "Bonjour ! Bienvenue chez TECAS Energie Solaire.\n\n"
-        "Je ne peux pas traiter les messages vocaux. "
-        "Veuillez taper votre demande par écrit.\n\n"
-        "Comment puis-je vous aider ?\n"
-        "1. Installation solaire\n"
-        "2. Pompage solaire agricole\n"
-        "3. Projet industriel ou professionnel\n"
-        "4. Achat de matériel solaire\n"
-        "5. Installateur / Revendeur\n"
-        "6. Service Après-Vente (SAV)\n"
-        "7. Contacter un conseiller"
+        "Bonjour ! Bienvenue chez TECAS Énergie Solaire. 🌞\n\n"
+        "Je ne peux pas traiter les messages vocaux ou les fichiers multimédias. "
+        "Veuillez écrire votre message et je vous répondrai avec plaisir !"
     )
 
     # ------------------------------------------------------------------
@@ -140,30 +155,39 @@ class WhatsappAIBot(models.AbstractModel):
 
     @staticmethod
     def _detect_active_language(session_messages):
-        """Detect active language from current-session bot messages only.
+        """Detect active language — client's last message takes priority.
 
         Returns 'anglais' or 'arabe'; None means French/Darija-French (no injection needed).
         Call with _get_current_session_messages() result, never the full history.
         """
-        bot_msgs = [m['content'] for m in session_messages if m['role'] == 'assistant']
+        # 1. Client's last message is ground truth — check it first
+        for msg in reversed(session_messages):
+            if msg['role'] == 'user':
+                content = msg['content']
+                arabic_chars = sum(1 for c in content if '؀' <= c <= 'ۿ')
+                if arabic_chars > 3:
+                    return 'arabe'
+                english_markers = [' the ', ' and ', ' your ', 'hello', 'please', 'thank', ' for ']
+                if sum(1 for w in english_markers if w in content.lower()) >= 2:
+                    return 'anglais'
+                # Last message is French/Darija — no language lock needed
+                return None
+
+        # 2. No user messages yet: infer from recent bot messages (Arabic consistency)
+        bot_msgs = [m['content'] for m in session_messages[-4:] if m['role'] == 'assistant']
         if not bot_msgs:
             return None
         combined = ' '.join(bot_msgs)
         if not combined:
             return None
-
         arabic_chars = sum(1 for c in combined if '؀' <= c <= 'ۿ')
         if arabic_chars > 10 and arabic_chars / len(combined) > 0.08:
             return 'arabe'
-
         english_markers = [
             ' the ', ' and ', ' your ', ' our ', ' for ', ' with ', ' you ',
-            'hello', 'welcome', 'solar', 'panel', 'inverter', 'battery',
-            'please', 'thank', 'installation', 'quote', 'price',
-            'how ', 'what ', 'when ', 'where ', 'would ',
+            'hello', 'welcome', 'solar', 'panel', 'please', 'thank',
         ]
-        hits = sum(1 for w in english_markers if w in combined.lower())
-        if hits >= 3:
+        if sum(1 for w in english_markers if w in combined.lower()) >= 3:
             return 'anglais'
         return None
 
@@ -228,12 +252,12 @@ class WhatsappAIBot(models.AbstractModel):
                 context_block = (context_block or '') + (
                     '\n\n[RESET] La derniere reponse du bot etait une cloture d\'escalade. '
                     'Ce message est un NOUVEAU contact. '
-                    'Repondre avec bienvenue + menu principal uniquement. '
-                    'Utiliser SALUTATION_NOM si present. '
+                    'Accueillir chaleureusement et demander comment aider — PAS de menu numerote. '
+                    'Utiliser SALUTATION_NOM si present dans le contexte. '
                     'Respecter LANGUE ACTIVE.'
                 )
 
-            result = self._call_openai(messages, config, context_block)
+            result = self._call_openai(session_msgs, config, context_block)
             if result is None:
                 return
 
@@ -275,10 +299,10 @@ class WhatsappAIBot(models.AbstractModel):
     # ------------------------------------------------------------------
 
     def _is_service_commercial(self, msg, config):
-        if not config.wa_account_id:
+        if not config.wa_account_ids:
             _logger.warning('WhatsappAIBot: No WhatsApp account selected in Bot configuration')
             return False
-        return msg.wa_account_id.id == config.wa_account_id.id
+        return msg.wa_account_id.id in config.wa_account_ids.ids
 
     def _get_channel(self, msg):
         mail_msg = msg.mail_message_id
@@ -316,7 +340,13 @@ class WhatsappAIBot(models.AbstractModel):
     # ------------------------------------------------------------------
 
     def _build_messages(self, channel):
-        """Return the last 20 messages as an OpenAI-compatible list."""
+        """Return messages from the current session as an OpenAI-compatible list.
+
+        Session boundary: any silence gap >= _SESSION_GAP_HOURS hours between consecutive
+        messages resets the session — messages before the gap are discarded. This prevents
+        name/city/intent collected in a previous conversation from prematurely triggering
+        escalation in a new one.
+        """
         wa_msgs = self.env['whatsapp.message'].search(
             [
                 ('mail_message_id.model', '=', 'discuss.channel'),
@@ -326,6 +356,20 @@ class WhatsappAIBot(models.AbstractModel):
             limit=20,
         )
         wa_msgs = wa_msgs.sorted('id')
+
+        # Find the start of the current session (most recent gap >= _SESSION_GAP_HOURS)
+        session_start = 0
+        for i in range(len(wa_msgs) - 1, 0, -1):
+            prev_date = wa_msgs[i - 1].create_date
+            curr_date = wa_msgs[i].create_date
+            if prev_date and curr_date:
+                gap_hours = (curr_date - prev_date).total_seconds() / 3600.0
+                if gap_hours >= _SESSION_GAP_HOURS:
+                    session_start = i
+                    break
+
+        wa_msgs = wa_msgs[session_start:]
+
         result = []
         for wa_msg in wa_msgs:
             body = self._strip_html(wa_msg.mail_message_id.body or '')
@@ -364,142 +408,221 @@ class WhatsappAIBot(models.AbstractModel):
     # Context block
     # ------------------------------------------------------------------
 
-    def _build_context_block(self, channel, messages, session_msgs, lang):
-        """Build a context string injected into the system prompt for this request."""
-        recent = ' '.join(m['content'] for m in messages[-3:]).lower()
-        recent_norm = (
-            recent
+    @staticmethod
+    def _norm(text):
+        """Normalize French/Darija text for keyword matching."""
+        return (
+            text.lower()
             .replace('é', 'e').replace('è', 'e').replace('ê', 'e')
             .replace('à', 'a').replace('â', 'a')
             .replace('ô', 'o').replace('û', 'u').replace('î', 'i')
             .replace('ç', 'c')
         )
 
-        blocks_priority = []
-        blocks_optional = []
+    def _build_context_block(self, channel, messages, session_msgs, lang):
+        """Build a context string injected into the system prompt for this request."""
+        recent_raw = ' '.join(m['content'] for m in session_msgs[-5:])
+        recent_norm = self._norm(recent_raw)
+        recent_words = set(recent_norm.split())
 
-        # 0. Language lock — from current session, prevents reversion on short inputs
+        parts = []
+
+        # 0. Language lock
         if lang:
-            blocks_priority.append((
-                'lang',
+            parts.append(
                 'LANGUE ACTIVE : %s\n'
-                'REGLE ABSOLUE : Utiliser uniquement cette langue pour toute la reponse, '
-                'y compris les champs "reponse" et "raison" du JSON. '
-                'Ne jamais revenir au francais.' % lang,
-            ))
+                'REGLE ABSOLUE : Utiliser uniquement cette langue. '
+                'Ne jamais revenir au francais.' % lang
+            )
 
-        # 1. Client profile — phone always; name/city with targeted scope
+        # 1. Client profile + history
         try:
             partner = self._channel_partner(channel)
             if partner:
-                phone = partner.phone or getattr(partner, 'mobile', None)
-                profile_lines = ['PROFIL CLIENT :']
-
-                if phone:
-                    profile_lines.append('- TEL : %s (connu, ne pas redemander)' % phone)
-
-                if self._is_real_partner_name(partner.name):
-                    # On session start: inject for greeting only
-                    session_user_count = sum(1 for m in session_msgs if m['role'] == 'user')
-                    if session_user_count <= 1:
-                        profile_lines.append('- SALUTATION_NOM : %s' % partner.name)
-                    else:
-                        # Mid-flow: only for the name confirmation step
-                        profile_lines.append('- NOM_CONNU : %s' % partner.name)
-
-                city = getattr(partner, 'city', None)
-                if city:
-                    profile_lines.append('- VILLE_CONNUE : %s' % city)
-
-                if len(profile_lines) > 1:
-                    blocks_priority.append(('profile', '\n'.join(profile_lines)))
+                profile = self._build_profile_block(partner, session_msgs)
+                if profile:
+                    parts.append(profile)
+                history = self._fetch_client_history(partner)
+                if history:
+                    parts.append(history)
         except Exception:
-            _logger.warning('WhatsappAIBot: context — customer profile query failed')
+            _logger.warning('WhatsappAIBot: context — profile/history query failed')
 
-        # 2. Product catalog (optional, keyword-triggered)
-        if _PRODUCT_KEYWORDS & set(recent_norm.split()):
+        # 2. Product catalog with prices (triggered by product OR price keywords)
+        wants_products = bool((_PRODUCT_KEYWORDS | _PRICE_KEYWORDS) & recent_words)
+        if wants_products:
             try:
-                products = self.env['product.template'].sudo().search(
-                    [('sale_ok', '=', True), ('active', '=', True)],
-                    order='categ_id asc', limit=20,
-                )
-                if products:
-                    lines = ['CATALOGUE PRODUITS :']
-                    for p in products:
-                        try:
-                            qty = int(p.qty_available)
-                        except Exception:
-                            qty = 0
-                        categ = p.categ_id.name if p.categ_id else '—'
-                        lines.append('- [%s] %s : %d unités' % (categ, p.name, qty))
-                    blocks_optional.append(('products', '\n'.join(lines)))
+                products_block = self._fetch_products_with_prices(recent_norm)
+                if products_block:
+                    parts.append(products_block)
             except Exception:
                 _logger.warning('WhatsappAIBot: context — product catalog query failed')
 
-        # 3. Promotions (optional, keyword-triggered)
-        if _PROMO_KEYWORDS & set(recent_norm.split()):
+        # 3. Business hours (keyword-triggered)
+        if _HOURS_KEYWORDS & recent_words:
             try:
-                promos = self.env['product.template'].sudo().search(
-                    [('sale_ok', '=', True), ('active', '=', True),
-                     ('description_sale', 'ilike', 'promo')],
-                    limit=5,
-                )
-                if promos:
-                    lines = ['PROMOTIONS EN COURS :']
-                    for p in promos:
-                        desc = (p.description_sale or '').strip().replace('\n', ' ')[:120]
-                        lines.append('- %s : %s' % (p.name, desc))
-                    blocks_optional.append(('promos', '\n'.join(lines)))
-            except Exception:
-                _logger.warning('WhatsappAIBot: context — promotions query failed')
-
-        # 4. Business hours (optional, keyword-triggered)
-        if _HOURS_KEYWORDS & set(recent_norm.split()):
-            try:
-                now = datetime.now(_TZ_MOROCCO)
-                frac = now.hour + now.minute / 60.0
-                wd = now.weekday()
-                if wd < 5:
-                    open_now = 8.5 <= frac < 18.0
-                elif wd == 5:
-                    open_now = 8.5 <= frac < 13.0
-                else:
-                    open_now = False
-                status = 'OUVERT' if open_now else 'FERMÉ'
-                blocks_priority.append(('hours', '\n'.join([
-                    "HORAIRES (%s) : Lun-Ven 08:30-18:00 | Sam 08:30-13:00 | Dim fermé" % status,
-                ])))
+                parts.append(self._build_hours_block())
             except Exception:
                 _logger.warning('WhatsappAIBot: context — business hours failed')
 
-        if not blocks_priority and not blocks_optional:
+        if not parts:
             return ''
 
-        CHAR_BUDGET = 1600
-        parts = [text for _k, text in blocks_priority]
-        chars_used = sum(len(p) for p in parts)
-
-        for key, text in blocks_optional:
-            remaining = CHAR_BUDGET - chars_used
-            if remaining <= 0:
+        # Enforce character budget — truncate last block if needed
+        CHAR_BUDGET = 2800
+        output = []
+        used = 0
+        for block in parts:
+            if used + len(block) + 2 <= CHAR_BUDGET:
+                output.append(block)
+                used += len(block) + 2
+            else:
+                remaining = CHAR_BUDGET - used
+                if remaining > 60:
+                    # Keep as many lines as fit
+                    kept = []
+                    for line in block.split('\n'):
+                        if used + len('\n'.join(kept)) + len(line) + 1 <= CHAR_BUDGET:
+                            kept.append(line)
+                        else:
+                            kept.append('(suite tronquée)')
+                            break
+                    output.append('\n'.join(kept))
                 break
-            if len(text) <= remaining:
-                parts.append(text)
-                chars_used += len(text)
-            elif key == 'products':
-                lines = text.split('\n')
-                kept = [lines[0]]
-                for line in lines[1:]:
-                    if chars_used + len('\n'.join(kept)) + len(line) + 1 <= CHAR_BUDGET:
-                        kept.append(line)
-                    else:
-                        kept.append('(liste tronquée)')
-                        break
-                truncated = '\n'.join(kept)
-                parts.append(truncated)
-                chars_used += len(truncated)
 
-        return '\n\n---\nCONTEXTE TEMPS RÉEL :\n' + '\n\n'.join(parts) if parts else ''
+        return '\n\n---\nCONTEXTE TEMPS RÉEL :\n' + '\n\n'.join(output) if output else ''
+
+    def _build_profile_block(self, partner, session_msgs):
+        """Build client profile context lines."""
+        phone = partner.phone or getattr(partner, 'mobile', None)
+        lines = ['PROFIL CLIENT :']
+        if phone:
+            lines.append('- TEL : %s (connu, ne pas redemander)' % phone)
+        if self._is_real_partner_name(partner.name):
+            session_user_count = sum(1 for m in session_msgs if m['role'] == 'user')
+            if session_user_count <= 1:
+                lines.append('- SALUTATION_NOM : %s' % partner.name)
+            else:
+                lines.append('- NOM_CONNU : %s' % partner.name)
+        city = getattr(partner, 'city', None)
+        if city:
+            lines.append('- VILLE_CONNUE : %s' % city)
+        return '\n'.join(lines) if len(lines) > 1 else ''
+
+    def _fetch_client_history(self, partner):
+        """Fetch existing CRM leads and sale orders for context."""
+        lines = []
+        try:
+            leads = self.env['crm.lead'].sudo().search(
+                [('partner_id', '=', partner.id), ('active', '=', True)],
+                order='create_date desc', limit=3,
+            )
+            if leads:
+                lines.append('HISTORIQUE CRM :')
+                for lead in leads:
+                    date = lead.create_date.strftime('%d/%m/%Y') if lead.create_date else '?'
+                    stage = lead.stage_id.name if lead.stage_id else 'En cours'
+                    lines.append('- %s | %s | %s' % (lead.name, date, stage))
+        except Exception:
+            _logger.warning('WhatsappAIBot: context — CRM leads query failed')
+        try:
+            orders = self.env['sale.order'].sudo().search(
+                [('partner_id', '=', partner.id), ('state', 'not in', ['draft', 'cancel'])],
+                order='date_order desc', limit=3,
+            )
+            if orders:
+                lines.append('COMMANDES PRECEDENTES :')
+                for order in orders:
+                    date = order.date_order.strftime('%d/%m/%Y') if order.date_order else '?'
+                    lines.append('- %s | %s | %.0f MAD' % (order.name, date, order.amount_total))
+        except Exception:
+            _logger.warning('WhatsappAIBot: context — sale orders query failed')
+        return '\n'.join(lines) if lines else ''
+
+    def _fetch_products_with_prices(self, recent_norm):
+        """Search products matching the conversation and return with client prices + stock."""
+        # Extract which product families appear in the conversation
+        family_map = {
+            'panneau':   ['panneau', 'panneaux', 'panel', 'photovoltaique', 'kwc', 'watt', 'wc',
+                          'jinko', 'canadian', 'trina', 'longi', 'blayk', 'pano'],
+            'onduleur':  ['onduleur', 'onduleurs', 'inverter', 'huawei', 'deye', 'sungrow',
+                          'solax', 'solplanet', 'must', 'fachi', 'fishi'],
+            'variateur': ['variateur', 'variateurs', 'vfd', 'pompage', 'puits', 'irrigation',
+                          'مضخة', 'محول'],
+            'batterie':  ['batterie', 'batteries', 'battery', 'lithium', 'lifepo', 'gel',
+                          'stockage', 'pylontech', 'dyness', 'baak', 'kbach'],
+            'pompe':     ['pompe', 'pompes', 'pump', 'submersible'],
+            'cable':     ['cable', 'câble', 'cables', 'mc4', 'ro2v', 'rvk', 'connecteur'],
+            'structure': ['structure', 'structures', 'fixation', 'support', 'montage'],
+            'kit':       ['kit', 'kits', 'pack', 'complet'],
+        }
+        matched_families = [
+            family for family, terms in family_map.items()
+            if any(term in recent_norm for term in terms)
+        ]
+
+        # Build search domain — include family key + top ASCII alternative terms
+        if matched_families:
+            or_clauses = []
+            for family in matched_families[:3]:
+                terms = [family] + [
+                    t for t in family_map[family]
+                    if t.isascii() and len(t) > 3
+                ][:3]
+                for term in terms:
+                    or_clauses.append(('name', 'ilike', term))
+
+            base = [('sale_ok', '=', True), ('active', '=', True)]
+            n = len(or_clauses)
+            domain = base + (['|'] * (n - 1)) + or_clauses
+            products = self.env['product.template'].sudo().search(domain, limit=20)
+
+            # Fallback: if no specific match, return general catalog so AI can still help
+            if not products:
+                products = self.env['product.template'].sudo().search(
+                    [('sale_ok', '=', True), ('active', '=', True)],
+                    order='categ_id asc', limit=15,
+                )
+        else:
+            # No specific product mentioned — return full catalog (condensed)
+            products = self.env['product.template'].sudo().search(
+                [('sale_ok', '=', True), ('active', '=', True)],
+                order='categ_id asc', limit=25,
+            )
+
+        if not products:
+            return ''
+
+        lines = ['CATALOGUE PRODUITS (prix client MAD HT) :']
+        for p in products:
+            try:
+                qty = int(p.qty_available)
+            except Exception:
+                qty = 0
+            price = p.list_price
+            dispo = 'En stock' if qty > 0 else 'Sur commande'
+            price_str = '%.0f MAD' % price if price > 0 else 'Prix sur demande'
+            desc = ''
+            if p.description_sale:
+                desc = ' — ' + p.description_sale.strip().replace('\n', ' ')[:60]
+            lines.append(
+                '- %s | %s | %s (%d u.)%s' % (p.name, price_str, dispo, qty, desc)
+            )
+        return '\n'.join(lines)
+
+    def _build_hours_block(self):
+        """Return business hours context with current open/closed status."""
+        now = datetime.now(_TZ_MOROCCO)
+        frac = now.hour + now.minute / 60.0
+        wd = now.weekday()
+        if wd < 5:
+            open_now = 8.5 <= frac < 18.0
+        elif wd == 5:
+            open_now = 8.5 <= frac < 13.0
+        else:
+            open_now = False
+        status = 'OUVERT' if open_now else 'FERMÉ'
+        return 'HORAIRES (%s) : Lun-Ven 08:30-18:00 | Sam 08:30-13:00 | Dim fermé' % status
 
     def _save_client_info(self, channel, result):
         """Write client_name / client_city from AI response to the partner record."""
@@ -510,6 +633,15 @@ class WhatsappAIBot(models.AbstractModel):
         try:
             partner = self._channel_partner(channel)
             if not partner:
+                return
+            # Never overwrite an internal user's partner — only update external contacts
+            if self.env['res.users'].sudo().search(
+                [('partner_id', '=', partner.id), ('share', '=', False)], limit=1
+            ):
+                _logger.warning(
+                    'WhatsappAIBot: _save_client_info blocked — partner %s (%s) is an internal user',
+                    partner.id, partner.name,
+                )
                 return
             vals = {}
             if client_name and (
@@ -580,111 +712,15 @@ class WhatsappAIBot(models.AbstractModel):
     # ------------------------------------------------------------------
 
     def _post_whatsapp_reply(self, channel, reply, is_escalation=False):
-        """Route reply to correct WhatsApp message type."""
-        msg_class = self._classify_reply(reply)
+        """Send bot reply as plain text. After escalation, add a Recommencer button."""
         try:
-            if msg_class == 'profile':
-                header, items = self._split_header_and_list(reply)
-                self._log_outbound_for_history(channel, reply)
-                self._send_interactive_profile(channel, header, items)
-            elif msg_class == 'client_menu':
-                header, items = self._split_header_and_list(reply)
-                self._log_outbound_for_history(channel, reply)
-                self._send_buttons_chunked(channel, header, items)
+            self._log_outbound_for_history(channel, reply)
+            if is_escalation:
+                self._send_plain_with_restart(channel, reply)
             else:
-                self._log_outbound_for_history(channel, reply)
-                if is_escalation:
-                    self._send_plain_with_restart(channel, reply)
-                else:
-                    self._send_pure_text(channel, reply)
+                self._send_pure_text(channel, reply)
         except Exception:
             _logger.exception('WhatsappAIBot: Failed to post WhatsApp reply.')
-
-    def _classify_reply(self, reply):
-        """2-3 items → buttons; 4+ items → chunked buttons; else → plain text."""
-        _, items = self._split_header_and_list(reply)
-        n = len(items)
-        if 2 <= n <= 3:
-            return 'profile'
-        if n >= 4:
-            return 'client_menu'
-        return 'plain'
-
-    @staticmethod
-    def _split_header_and_list(reply):
-        """Extract (header, [(id, title), ...]) from a numbered-list reply."""
-        _inline_re = re.compile(r'([1-9][0-9]?)[\.。)]\s+(.+?)(?=\s+[1-9][0-9]?[\.。)]|\s*$)')
-
-        def _items_from_line(s):
-            found = _inline_re.findall(s)
-            return [(num, text.strip()) for num, text in found] if found else []
-
-        lines = reply.split('\n')
-        first_idx = None
-        for i, line in enumerate(lines):
-            if re.match(r'^\s*[1-9][0-9]?\s*[\.。)]\s*\S', line):
-                first_idx = i
-                break
-
-        if first_idx is None:
-            for i, line in enumerate(lines):
-                s = line.strip()
-                if not s or re.match(r'^\(R[ée]pondez', s):
-                    continue
-                first_pos = re.search(r'(?<!\d)\b1[\.。)]\s', s)
-                if first_pos:
-                    inline_items = _inline_re.findall(s[first_pos.start():])
-                    if len(inline_items) >= 2:
-                        question_part = s[:first_pos.start()].rstrip(':').strip()
-                        before = [
-                            l.strip() for l in lines[:i]
-                            if l.strip() and not re.match(r'^\(R[ée]pondez', l.strip())
-                        ]
-                        if question_part:
-                            before.append(question_part)
-                        return '\n'.join(before).strip(), [(n, t.strip()) for n, t in inline_items]
-            return reply.strip(), []
-
-        header_lines = [
-            l.strip() for l in lines[:first_idx]
-            if l.strip() and not re.match(r'^\(R[ée]pondez', l.strip())
-        ]
-        items = []
-        for line in lines[first_idx:]:
-            s = line.strip()
-            if not s or re.match(r'^\(R[ée]pondez', s):
-                continue
-            items.extend(_items_from_line(s))
-
-        if items and items[0][0] != '1' and header_lines:
-            last = header_lines[-1]
-            m2 = re.search(r':\s*(1[\.。)]\s*(.+))$', last)
-            if m2:
-                option_text = re.split(r'\s+\d', m2.group(2))[0].strip()
-                items.insert(0, ('1', option_text))
-                header_lines[-1] = last[:m2.start()].rstrip(':').strip()
-                if not header_lines[-1]:
-                    header_lines.pop()
-
-        # A numbered line whose text ends with "?" is the question itself, not a choice.
-        # Move it to the header to avoid duplicate IDs (e.g. "1. House" and "1. What type?").
-        real_items = []
-        for iid, title in items:
-            if title.strip().endswith('?') or title.strip().endswith('؟'):
-                header_lines.append(title)
-            else:
-                real_items.append((iid, title))
-
-        return '\n'.join(header_lines).strip(), real_items
-
-    @staticmethod
-    def _clean_label(text, max_len):
-        """Truncate to max_len, preferring word boundaries when they keep ≥75% of space."""
-        clean = re.split(r'\s*[\(（/]', text)[0].strip() or text.strip()
-        if len(clean) <= max_len:
-            return clean
-        truncated = clean[:max_len].rsplit(' ', 1)[0]
-        return truncated if len(truncated) >= (max_len * 3 // 4) else clean[:max_len]
 
     def _log_outbound_for_history(self, channel, body):
         """Create mail.message + whatsapp.message records for AI context tracking."""
@@ -709,66 +745,6 @@ class WhatsappAIBot(models.AbstractModel):
                 'wa_account_id': channel.wa_account_id.id if channel.wa_account_id else False,
                 'state': 'sent',
             })
-
-    def _send_interactive_profile(self, channel, header, items):
-        """Send 2-3 option reply as WhatsApp quick-reply buttons."""
-        account = channel.wa_account_id
-        if not account or not account.phone_uid:
-            return
-        number = str(getattr(channel, 'whatsapp_number', '') or '')
-        if not number:
-            return
-        body_text = (header or 'Choisissez une option :')[:1024]
-        buttons = [
-            {'type': 'reply', 'reply': {'id': iid, 'title': self._clean_label(title, 20)}}
-            for iid, title in items[:3]
-        ]
-        if not buttons:
-            return
-        payload = json.dumps({
-            'messaging_product': 'whatsapp',
-            'recipient_type': 'individual',
-            'to': number,
-            'type': 'interactive',
-            'interactive': {
-                'type': 'button',
-                'body': {'text': body_text},
-                'action': {'buttons': buttons},
-            },
-        }).encode('utf-8')
-        self._wa_post(account, payload)
-
-    def _send_buttons_chunked(self, channel, header, items):
-        """Send 4+ options as consecutive 3-button messages — no 'Voir les options' needed."""
-        account = channel.wa_account_id
-        if not account or not account.phone_uid:
-            return
-        number = str(getattr(channel, 'whatsapp_number', '') or '')
-        if not number:
-            return
-
-        all_items = list(items[:9])
-        all_items.append(('0', 'Recommencer'))
-
-        chunks = [all_items[i:i + 3] for i in range(0, len(all_items), 3)]
-        for idx, chunk in enumerate(chunks):
-            body_text = (header or 'Choisissez une option :')[:1024] if idx == 0 else '•'
-            buttons = [
-                {'type': 'reply', 'reply': {'id': iid, 'title': self._clean_label(title, 20)}}
-                for iid, title in chunk
-            ]
-            payload = json.dumps({
-                'messaging_product': 'whatsapp',
-                'recipient_type': 'individual',
-                'to': number,
-                'type': 'interactive',
-                'interactive': {
-                    'type': 'button',
-                    'body': {'text': body_text},
-                    'action': {'buttons': buttons},
-                },
-            }).encode('utf-8')
-            self._wa_post(account, payload)
 
     def _send_plain_with_restart(self, channel, reply):
         """Send text with a single ↩ Recommencer button (used after escalation closing)."""
@@ -859,8 +835,14 @@ class WhatsappAIBot(models.AbstractModel):
         partner = getattr(channel, 'whatsapp_partner_id', False)
         if not partner:
             bot_id = self.env.ref('base.partner_root').id
+            internal_partner_ids = set(
+                self.env['res.users'].sudo().search([('share', '=', False)])
+                .mapped('partner_id.id')
+            )
             members = channel.channel_member_ids.filtered(
-                lambda m: m.partner_id and m.partner_id.id != bot_id
+                lambda m: m.partner_id
+                and m.partner_id.id != bot_id
+                and m.partner_id.id not in internal_partner_ids
             )
             partner = members[:1].partner_id or False
         return partner
@@ -961,14 +943,14 @@ class WhatsappAIBot(models.AbstractModel):
     def send_followup_nudges(self):
         """Cron entry: scan all active WA channels and nudge stalled ones."""
         config = self.env['whatsapp.ai.bot.config'].sudo().get_singleton()
-        if not config.active or not config.wa_account_id:
+        if not config.active or not config.wa_account_ids:
             return
 
         now = datetime.now(timezone.utc)
         since = (now - timedelta(minutes=_NUDGE_GIVE_UP_MIN)).replace(tzinfo=None)
 
         recent_msgs = self.env['whatsapp.message'].sudo().search([
-            ('wa_account_id', '=', config.wa_account_id.id),
+            ('wa_account_id', 'in', config.wa_account_ids.ids),
             ('mail_message_id.model', '=', 'discuss.channel'),
             ('create_date', '>=', since),
         ])
@@ -995,7 +977,7 @@ class WhatsappAIBot(models.AbstractModel):
         wa_msgs = self.env['whatsapp.message'].sudo().search([
             ('mail_message_id.model', '=', 'discuss.channel'),
             ('mail_message_id.res_id', '=', channel.id),
-            ('wa_account_id', '=', config.wa_account_id.id),
+            ('wa_account_id', 'in', config.wa_account_ids.ids),
         ], order='id desc', limit=5)
 
         if not wa_msgs:

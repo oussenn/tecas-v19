@@ -16,7 +16,7 @@
                     <group>
                         <group string="General">
                             <field name="active" widget="boolean_toggle" string="Bot Enabled"/>
-                            <field name="wa_account_id"/>
+                            <field name="wa_account_ids" widget="many2many_tags" options="{'no_create': True}"/>
                         </group>
                     </group>
                     <notebook>
