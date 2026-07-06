@@ -108,14 +108,26 @@ _COMPANY_SIGNATURE = (
     "🌞 Venez visiter notre showroom et découvrir nos installations solaires en fonctionnement réel."
 )
 
-_NUDGE_MESSAGES = {
+# First recall (after _NUDGE_1_DELAY_HOURS of client silence)
+_NUDGE_MESSAGES_1 = {
     'fr':      "Êtes-vous toujours là ? 😊\nN'hésitez pas à continuer, je suis là pour vous aider !",
     'anglais': "Are you still there? 😊\nFeel free to continue — I'm here to help!",
     'arabe':   "هل لا تزال هناك؟ 😊\nلا تتردد في المتابعة، أنا هنا للمساعدة!",
 }
+# Second / final recall (after _NUDGE_2_DELAY_HOURS more of silence)
+_NUDGE_MESSAGES_2 = {
+    'fr':      "Bonjour 👋 Je reviens vers vous une dernière fois — souhaitez-vous qu'on avance sur votre projet solaire ? Je reste à votre disposition !",
+    'anglais': "Hello 👋 Just following up one last time — would you like to move forward with your solar project? I'm here whenever you're ready!",
+    'arabe':   "مرحبًا 👋 أتواصل معكم للمرة الأخيرة — هل ترغبون في المضي قدمًا في مشروعكم الشمسي؟ أنا في خدمتكم!",
+}
 
-_NUDGE_SILENCE_MIN = 1
-_NUDGE_GIVE_UP_MIN = 30
+# Two-stage follow-up schedule.
+# Stage 1: first recall fires 4h after the bot's last message with no client reply.
+# Stage 2: second recall fires 20h after the first recall (≈24h after the bot's message).
+_NUDGE_1_DELAY_HOURS = 4
+_NUDGE_2_DELAY_HOURS = 20
+# Cron only scans channels active within this window — must exceed 4h + 20h.
+_NUDGE_LOOKBACK_HOURS = 26
 
 _TZ_MOROCCO = timezone(timedelta(hours=1))
 
@@ -126,8 +138,8 @@ class WhatsappAIBot(models.AbstractModel):
 
     _VOICE_FALLBACK_FR = (
         "Bonjour ! Bienvenue chez TECAS Énergie Solaire. 🌞\n\n"
-        "Je ne peux pas traiter les messages vocaux ou les fichiers multimédias. "
-        "Veuillez écrire votre message et je vous répondrai avec plaisir !"
+        "Je ne peux pas traiter les messages vocaux ou vidéo. "
+        "Veuillez écrire votre message ou envoyer une photo, et je vous répondrai avec plaisir !"
     )
 
     # ------------------------------------------------------------------
@@ -164,11 +176,28 @@ class WhatsappAIBot(models.AbstractModel):
         for msg in reversed(session_messages):
             if msg['role'] == 'user':
                 content = msg['content']
+                if isinstance(content, list):
+                    # Vision format — extract text parts
+                    content = ' '.join(
+                        p.get('text', '') for p in content
+                        if isinstance(p, dict) and p.get('type') == 'text'
+                    )
                 arabic_chars = sum(1 for c in content if '؀' <= c <= 'ۿ')
                 if arabic_chars > 3:
                     return 'arabe'
-                english_markers = [' the ', ' and ', ' your ', 'hello', 'please', 'thank', ' for ']
-                if sum(1 for w in english_markers if w in content.lower()) >= 2:
+                c = content.lower()
+                # High-confidence English-only phrases — one match is enough
+                english_high = [
+                    'do you', 'can you', 'i need', 'i want', 'i have', 'i am',
+                    'how much', 'what is', 'what are', 'how are', 'is it',
+                    'these', 'those', 'hello', 'hi ', 'please', 'thank',
+                    'good morning', 'good evening', 'available', 'interested',
+                ]
+                if any(w in c for w in english_high):
+                    return 'anglais'
+                # Lower-confidence — need 2+ matches
+                english_low = [' the ', ' and ', ' your ', ' for ', ' with ', ' are ', ' can ', ' my ']
+                if sum(1 for w in english_low if w in c) >= 2:
                     return 'anglais'
                 # Last message is French/Darija — no language lock needed
                 return None
@@ -190,6 +219,58 @@ class WhatsappAIBot(models.AbstractModel):
         if sum(1 for w in english_markers if w in combined.lower()) >= 3:
             return 'anglais'
         return None
+
+    def _extract_images(self, msg):
+        """Return list of (mimetype, base64_str) for image attachments on this message."""
+        images = []
+        try:
+            for att in msg.mail_message_id.sudo().attachment_ids:
+                if not att.mimetype or not att.mimetype.startswith('image/'):
+                    continue
+                if not att.datas:
+                    continue
+                b64 = att.datas
+                if isinstance(b64, bytes):
+                    b64 = b64.decode('utf-8')
+                images.append((att.mimetype, b64))
+                if len(images) >= 3:
+                    break
+        except Exception:
+            _logger.warning('WhatsappAIBot: failed to extract images from msg %s', msg.id, exc_info=True)
+        return images
+
+    @staticmethod
+    def _inject_images(session_msgs, msg_body, images):
+        """Replace the last user message with a vision-format message (text + images).
+
+        Must be called AFTER language detection and context building, since those
+        expect string content. After injection the last user message content becomes a list.
+        """
+        if not images:
+            return session_msgs
+
+        # Ensure the current message is in session_msgs (skipped by _build_messages if body was empty)
+        msgs = list(session_msgs)
+        if not msgs or msgs[-1]['role'] != 'user':
+            msgs.append({'role': 'user', 'content': msg_body or '[Image]'})
+
+        # Find the last user message and replace its content with vision format
+        for i in range(len(msgs) - 1, -1, -1):
+            if msgs[i]['role'] == 'user':
+                text = msgs[i]['content'] if isinstance(msgs[i]['content'], str) else (msg_body or '[Image]')
+                content_parts = [{'type': 'text', 'text': text or '[Image]'}]
+                for mimetype, b64 in images:
+                    content_parts.append({
+                        'type': 'image_url',
+                        'image_url': {
+                            'url': 'data:%s;base64,%s' % (mimetype, b64),
+                            'detail': 'auto',
+                        },
+                    })
+                msgs[i] = {'role': 'user', 'content': content_parts}
+                return msgs
+
+        return msgs
 
     @staticmethod
     def _is_real_partner_name(name):
@@ -229,8 +310,10 @@ class WhatsappAIBot(models.AbstractModel):
                 return
 
             msg_body = self._strip_html(msg.mail_message_id.body or '')
-            if not msg_body:
-                _logger.info('WhatsappAIBot: voice/media on channel %s — sending French welcome', channel.id)
+            images = self._extract_images(msg)
+
+            if not msg_body and not images:
+                _logger.info('WhatsappAIBot: voice/unsupported media on channel %s', channel.id)
                 self._post_whatsapp_reply(channel, self._VOICE_FALLBACK_FR)
                 return
 
@@ -239,7 +322,7 @@ class WhatsappAIBot(models.AbstractModel):
                 return
 
             messages = self._build_messages(channel)
-            if not messages:
+            if not messages and not images:
                 _logger.warning('WhatsappAIBot: no conversation history for channel %s', channel.id)
                 return
 
@@ -256,6 +339,11 @@ class WhatsappAIBot(models.AbstractModel):
                     'Utiliser SALUTATION_NOM si present dans le contexte. '
                     'Respecter LANGUE ACTIVE.'
                 )
+
+            # Inject images after all text processing (language detection, context building)
+            if images:
+                session_msgs = self._inject_images(session_msgs, msg_body, images)
+                _logger.info('WhatsappAIBot: %d image(s) injected for channel %s', len(images), channel.id)
 
             result = self._call_openai(session_msgs, config, context_block)
             if result is None:
@@ -593,20 +681,18 @@ class WhatsappAIBot(models.AbstractModel):
         if not products:
             return ''
 
-        lines = ['CATALOGUE PRODUITS (prix client MAD HT) :']
+        lines = ['CATALOGUE PRODUITS :']
         for p in products:
             try:
                 qty = int(p.qty_available)
             except Exception:
                 qty = 0
-            price = p.list_price
             dispo = 'En stock' if qty > 0 else 'Sur commande'
-            price_str = '%.0f MAD' % price if price > 0 else 'Prix sur demande'
             desc = ''
             if p.description_sale:
                 desc = ' — ' + p.description_sale.strip().replace('\n', ' ')[:60]
             lines.append(
-                '- %s | %s | %s (%d u.)%s' % (p.name, price_str, dispo, qty, desc)
+                '- %s | Prix sur demande | %s%s' % (p.name, dispo, desc)
             )
         return '\n'.join(lines)
 
@@ -947,7 +1033,7 @@ class WhatsappAIBot(models.AbstractModel):
             return
 
         now = datetime.now(timezone.utc)
-        since = (now - timedelta(minutes=_NUDGE_GIVE_UP_MIN)).replace(tzinfo=None)
+        since = (now - timedelta(hours=_NUDGE_LOOKBACK_HOURS)).replace(tzinfo=None)
 
         recent_msgs = self.env['whatsapp.message'].sudo().search([
             ('wa_account_id', 'in', config.wa_account_ids.ids),
@@ -990,17 +1076,28 @@ class WhatsappAIBot(models.AbstractModel):
         if not latest.create_date:
             return
         age = now - latest.create_date.replace(tzinfo=timezone.utc)
-        if age < timedelta(minutes=_NUDGE_SILENCE_MIN) or age > timedelta(minutes=_NUDGE_GIVE_UP_MIN):
-            return
 
-        # Already nudged if two consecutive outbound messages with no inbound between
+        # Count consecutive outbound messages from the most recent (no inbound between).
+        # 1 = only the bot's real reply, no recall yet → stage 1 (fire at 4h).
+        # 2 = first recall already sent → stage 2 (fire 20h after it, ≈24h total).
+        # 3+ = both recalls sent → stop.
         consecutive_outbound = 0
         for m in wa_msgs:
             if m.message_type == 'outbound':
                 consecutive_outbound += 1
             else:
                 break
-        if consecutive_outbound >= 2:
+
+        if consecutive_outbound == 1:
+            delay = timedelta(hours=_NUDGE_1_DELAY_HOURS)
+            messages_set = _NUDGE_MESSAGES_1
+        elif consecutive_outbound == 2:
+            delay = timedelta(hours=_NUDGE_2_DELAY_HOURS)
+            messages_set = _NUDGE_MESSAGES_2
+        else:
+            return
+
+        if age < delay:
             return
 
         if not any(m.message_type == 'inbound' for m in wa_msgs):
@@ -1016,8 +1113,11 @@ class WhatsappAIBot(models.AbstractModel):
         # Use current session only for language detection
         session_msgs = self._get_current_session_messages(messages)
         lang = self._detect_active_language(session_msgs)
-        nudge = _NUDGE_MESSAGES.get(lang or 'fr', _NUDGE_MESSAGES['fr'])
+        nudge = messages_set.get(lang or 'fr', messages_set['fr'])
 
         self._log_outbound_for_history(channel, nudge)
         self._send_pure_text(channel, nudge)
-        _logger.info('WhatsappAIBot: nudge sent for channel %s (lang=%s)', channel.id, lang or 'fr')
+        _logger.info(
+            'WhatsappAIBot: recall #%d sent for channel %s (lang=%s)',
+            consecutive_outbound, channel.id, lang or 'fr',
+        )
