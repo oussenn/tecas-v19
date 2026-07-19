@@ -129,6 +129,10 @@ _NUDGE_2_DELAY_HOURS = 20
 # Cron only scans channels active within this window — must exceed 4h + 20h.
 _NUDGE_LOOKBACK_HOURS = 26
 
+# === DRAFT QUOTE FEATURE (removable) ===
+# sale.order.origin marker used to find/reuse the bot's own draft quotes.
+_DRAFT_QUOTE_ORIGIN = 'WhatsApp AI Bot'
+
 _TZ_MOROCCO = timezone(timedelta(hours=1))
 
 
@@ -378,6 +382,11 @@ class WhatsappAIBot(models.AbstractModel):
                     _logger.warning('WhatsappAIBot: No salesmen configured')
 
                 self._post_whatsapp_reply(channel, closing + _COMPANY_SIGNATURE, is_escalation=True)
+
+            # === DRAFT QUOTE FEATURE (removable) — safe no-op when absent ===
+            # Runs LAST so that, on an escalation turn, the CRM lead already
+            # exists and the quote can be linked to its opportunity/salesman.
+            self._maybe_create_draft_quote(channel, result)
 
         except Exception:
             _logger.exception('WhatsappAIBot: Unexpected error processing message %s', whatsapp_msg_id)
@@ -714,6 +723,14 @@ class WhatsappAIBot(models.AbstractModel):
         """Write client_name / client_city from AI response to the partner record."""
         client_name = (result.get('client_name') or '').strip()
         client_city = (result.get('client_city') or '').strip()
+        # 'a confirmer' is the literal placeholder the AI is told to use (see
+        # [ESCALATION] cases 3/4 in the prompt) when the real name/city is NOT
+        # known. It must never be written as if it were real client data —
+        # doing so previously overwrote confirmed names/cities on repeat escalations.
+        if client_name.lower() in ('a confirmer', 'à confirmer'):
+            client_name = ''
+        if client_city.lower() in ('a confirmer', 'à confirmer'):
+            client_city = ''
         if not client_name and not client_city:
             return
         try:
@@ -741,6 +758,153 @@ class WhatsappAIBot(models.AbstractModel):
                 _logger.info('WhatsappAIBot: partner %s updated: %s', partner.id, vals)
         except Exception:
             _logger.warning('WhatsappAIBot: failed to save client info', exc_info=True)
+
+    # ==================================================================
+    # === DRAFT QUOTE FEATURE (removable) ==============================
+    # To remove this feature entirely:
+    #   1. Delete these two methods (_maybe_create_draft_quote,
+    #      _resolve_quote_product).
+    #   2. Delete the single call to _maybe_create_draft_quote(...) in
+    #      handle_incoming_message().
+    #   3. Delete the _DRAFT_QUOTE_ORIGIN constant near the top.
+    #   4. Remove the [DRAFT QUOTE] section + the 'draft_quote' JSON line
+    #      from _DEFAULT_SYSTEM_PROMPT in whatsapp_ai_config.py, and the
+    #      matching legacy check "'[DRAFT QUOTE]' not in p".
+    # ==================================================================
+
+    def _maybe_create_draft_quote(self, channel, result):
+        """Create/update a DRAFT sale.order from products the AI listed in
+        result['draft_quote']. The price is NEVER sent to the client — this
+        quote is internal, for the salesman to review and finalise."""
+        items = result.get('draft_quote')
+        if not items or not isinstance(items, list):
+            return
+        try:
+            partner = self._channel_partner(channel)
+            if not partner:
+                return
+            # Never build a quote against an internal user's partner
+            if self.env['res.users'].sudo().search(
+                [('partner_id', '=', partner.id), ('share', '=', False)], limit=1
+            ):
+                return
+
+            order_lines = []
+            for it in items:
+                if not isinstance(it, dict):
+                    continue
+                name = (it.get('product') or '').strip()
+                if not name:
+                    continue
+                spec = (it.get('spec') or '').strip()  # e.g. "590W", "5kw", "5.12kwh"
+                try:
+                    qty = float(it.get('qty') or 1) or 1
+                except (TypeError, ValueError):
+                    qty = 1
+                product = self._resolve_quote_product(name, spec)
+                if not product:
+                    _logger.info('WhatsappAIBot: draft quote — product not resolved: %r (spec %r)', name, spec)
+                    continue
+                order_lines.append((0, 0, {
+                    'product_id': product.id,
+                    'product_uom_qty': qty,
+                }))
+
+            if not order_lines:
+                return
+
+            SaleOrder = self.env['sale.order'].sudo()
+            has_opp = 'opportunity_id' in SaleOrder._fields
+            lead = self._find_existing_lead(partner)
+
+            existing = SaleOrder.search([
+                ('partner_id', '=', partner.id),
+                ('state', '=', 'draft'),
+                ('origin', '=', _DRAFT_QUOTE_ORIGIN),
+            ], order='create_date desc', limit=1)
+
+            if existing:
+                # Replace lines so the draft always mirrors the latest request,
+                # and back-link the lead if it appeared after the quote was made.
+                vals = {'order_line': [(5, 0, 0)] + order_lines}
+                if lead:
+                    if lead.user_id and not existing.user_id:
+                        vals['user_id'] = lead.user_id.id
+                    if has_opp and not existing.opportunity_id:
+                        vals['opportunity_id'] = lead.id
+                existing.write(vals)
+                so = existing
+            else:
+                create_vals = {
+                    'partner_id': partner.id,
+                    'origin': _DRAFT_QUOTE_ORIGIN,
+                    'order_line': order_lines,
+                }
+                if lead:
+                    if lead.user_id:
+                        create_vals['user_id'] = lead.user_id.id
+                    if has_opp:
+                        create_vals['opportunity_id'] = lead.id
+                so = SaleOrder.create(create_vals)
+            _logger.info(
+                'WhatsappAIBot: draft quote %s for partner %s (%d line(s), opp=%s)',
+                so.name, partner.id, len(order_lines),
+                (so.opportunity_id.id if has_opp and so.opportunity_id else None),
+            )
+        except Exception:
+            _logger.warning('WhatsappAIBot: failed to create draft quote', exc_info=True)
+
+    def _resolve_quote_product(self, name, spec=None):
+        """Resolve a free-text product name (ideally copied verbatim from the
+        injected catalogue) to a sellable product.product variant, or False.
+        When the template has several variants (e.g. panel wattages) and a
+        `spec` is given (e.g. "590W", "5kw"), pick the matching variant instead
+        of the default one. Conservative: returns False rather than a wrong hit."""
+        Template = self.env['product.template'].sudo()
+        base = [('sale_ok', '=', True), ('active', '=', True)]
+        # 1) exact (case-insensitive) full-name match — the intended path
+        tmpl = Template.search(base + [('name', '=ilike', name)], limit=1)
+        # 2) the whole requested string appears inside a product name
+        if not tmpl:
+            tmpl = Template.search(base + [('name', 'ilike', name)], limit=1)
+        # 3) EVERY significant token must appear (AND) — avoids wrong single-word hits
+        if not tmpl:
+            tokens = [t for t in re.split(r'[\s,/]+', name) if len(t) > 3]
+            if tokens:
+                and_domain = base + [('name', 'ilike', t) for t in tokens]
+                tmpl = Template.search(and_domain, limit=1)
+        if not tmpl:
+            return False
+
+        variants = tmpl.product_variant_ids  # active variants of the template
+        if len(variants) <= 1 or not spec:
+            return tmpl.product_variant_id or False
+
+        # Several variants + a requested spec → choose the best-matching variant.
+        spec_norm = re.sub(r'[^a-z0-9]', '', spec.lower())      # "590W" -> "590w"
+        m = re.match(r'\d+', spec_norm)
+        spec_num = m.group(0) if m else ''                      # "590w" -> "590"
+        exact = partial = None
+        for v in variants:
+            attr_norms = [
+                re.sub(r'[^a-z0-9]', '', a.lower())
+                for a in v.product_template_attribute_value_ids.mapped('name')
+            ]
+            # exact attribute-value match, e.g. spec "590w" == attribute "590W"
+            if spec_norm and spec_norm in attr_norms:
+                exact = v
+                break
+            # partial: the numeric part appears in the code/attributes
+            if spec_num and partial is None:
+                vtext = re.sub(
+                    r'[^a-z0-9]', '',
+                    ((v.default_code or '') + ''.join(attr_norms)).lower(),
+                )
+                if spec_num in vtext:
+                    partial = v
+        return exact or partial or (tmpl.product_variant_id or False)
+
+    # === END DRAFT QUOTE FEATURE ======================================
 
     # ------------------------------------------------------------------
     # OpenAI API

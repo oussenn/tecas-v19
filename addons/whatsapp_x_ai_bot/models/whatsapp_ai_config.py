@@ -138,6 +138,48 @@ _DEFAULT_SYSTEM_PROMPT = (
     "After an escalation closing, any new message = a new contact. "
     "Greet naturally and ask how you can help. No numbered menus.\n\n"
 
+    # ── DRAFT QUOTE (internal, silent) ───────────────────────────────────────────
+    "[DRAFT QUOTE]\n"
+    "Whenever a quantity of a product is known, add a 'draft_quote' array to your JSON. "
+    "This silently prepares an INTERNAL draft quotation for the sales team.\n"
+    "Each item: {\"product\": \"<name copied EXACTLY from CATALOGUE PRODUITS>\", \"qty\": <number>, "
+    "\"spec\": \"<exact spec the client asked for, or omit>\"}.\n"
+    "SPEC FIELD (draft_quote_v3) — IMPORTANT for products sold in several variants "
+    "(panel wattage, inverter/pump power, battery capacity):\n"
+    "  • Put the EXACT spec the client mentioned in 'spec' — e.g. '590W', '5kw', '7.5kw', '5.12kwh'. "
+    "This selects the right variant. Keep 'product' as the clean catalogue name WITHOUT the spec.\n"
+    "  • Example: client asks JINKO 590W → "
+    "{\"product\": \"Panneaux Solaire JINKO\", \"qty\": 6, \"spec\": \"590W\"} "
+    "(NOT product='Panneaux Solaire JINKO 590W').\n"
+    "  • If the client gave no spec, omit 'spec'.\n"
+    "CRITICAL — COMBINE INFO ACROSS THE WHOLE SESSION (draft_quote_v2):\n"
+    "  • The product family/brand and the quantity are OFTEN in DIFFERENT messages. "
+    "Link them. If the client mentioned a brand/product earlier (e.g. 'jinko 590', 'batterie dyness', "
+    "'onduleur deye') and later gives only a quantity with a generic word "
+    "(e.g. '6 blayk', '6 دلبلايك', '10 panneaux', 'zouj', 'trois'), "
+    "that quantity refers to the product discussed earlier — build the draft_quote line for it.\n"
+    "  • Full example (this is the target behaviour):\n"
+    "    Client msg 1: 'شحال ثمن ديال جنكو 590' (asks price of JINKO)\n"
+    "    Client msg 2: 'خاصني 6 دلبلايك' (needs 6 panels)\n"
+    "    → draft_quote: [{\"product\": \"Panneaux Solaire JINKO\", \"qty\": 6}] "
+    "(JINKO from msg 1 + quantity 6 from msg 2).\n"
+    "  • If the client named only a family (e.g. just 'panneaux' / 'blayk') and NO brand anywhere, "
+    "pick the closest matching product from CATALOGUE PRODUITS of that family.\n"
+    "  • STOCK IS IRRELEVANT (draft_quote_v4): ALWAYS build the draft_quote even when the product "
+    "shows 'Sur commande' or out of stock — the stock data is often outdated. "
+    "Never refuse a quote, and never tell the client a product is unavailable, because of stock.\n"
+    "  • The catalogue names have no wattage — keep 'product' as the clean catalogue name "
+    "and put the wattage/power in 'spec' (e.g. product='Panneaux Solaire JINKO', spec='590W').\n"
+    "RULES:\n"
+    "  • Copy the product name EXACTLY as it appears in CATALOGUE PRODUITS so it can be matched. "
+    "Never invent a product that has no family match in the catalogue.\n"
+    "  • NEVER mention the quote, a price, or any amount to the client. "
+    "The draft_quote is 100% silent and internal.\n"
+    "  • Keep replying normally in 'reponse' (confirm the need, ask for name/city, etc.).\n"
+    "  • ALWAYS include draft_quote when you ESCALATE a client who discussed a product + quantity. "
+    "Escalation does NOT excuse omitting it — add both the escalation fields AND draft_quote.\n"
+    "  • Omit 'draft_quote' only when no quantity of any product has been mentioned in the session.\n\n"
+
     # ── JSON FORMAT ──────────────────────────────────────────────────────────────
     "[JSON FORMAT — STRICT, nothing before or after]\n"
     "Line breaks inside 'reponse': use \\n\n"
@@ -148,6 +190,9 @@ _DEFAULT_SYSTEM_PROMPT = (
     "{\"escalade\": true, \"raison\": \"summary for sales rep\", \"reponse\": \"closing message\", "
     "\"service\": \"code\", \"client_name\": \"Firstname LASTNAME or 'a confirmer'\", "
     "\"client_city\": \"City or 'a confirmer'\"}\n"
+    "OPTIONAL field (with or without escalation) — include ONLY when specific products "
+    "with quantities were requested, otherwise omit it entirely:\n"
+    "\"draft_quote\": [{\"product\": \"exact catalogue name\", \"qty\": number, \"spec\": \"590W (optional)\"}]\n"
     "Service codes: solar_installation | pumping | industrial | equipment_panels | "
     "equipment_inverters | equipment_batteries | equipment_structure | equipment_cables | "
     "equipment_multi | b2b_partner | sav | advisor | unknown\n"
@@ -243,6 +288,15 @@ class WhatsappAIBotConfig(models.Model):
         if '[BLOCKED CLIENT' not in p:
             return True
         if 'STOCK RULE' not in p:
+            return True
+        # === DRAFT QUOTE FEATURE (removable) ===
+        if '[DRAFT QUOTE]' not in p:
+            return True
+        if 'draft_quote_v2' not in p:
+            return True
+        if 'draft_quote_v3' not in p:
+            return True
+        if 'draft_quote_v4' not in p:
             return True
         return False
 
