@@ -1,0 +1,37 @@
+// Header refinements.
+//
+// This is the one file in the module that touches an existing part of the site
+// rather than a dropped block. It is kept separate from blocks.scss so the
+// distinction stays obvious, and it only adjusts spacing — no colours, no
+// layout, nothing that would fight the header template if it is switched.
+//
+// The theme renders the top menu at font-size-base (1.25rem on this site) while
+// Bootstrap keeps its default 0.5rem of link padding, so seven items run
+// together into one band of text. Widening the padding is what separates them;
+// the font size is left alone because it is the client's theme setting.
+
+@media (min-width: 992px) {
+    header #top_menu.navbar-nav {
+        column-gap: 0.35rem;
+
+        > .nav-item > .nav-link {
+            padding-left: 0.85rem;
+            padding-right: 0.85rem;
+            // Labels like "Formulaire d'inscription" otherwise break across two
+            // lines and make the header taller than the logo.
+            white-space: nowrap;
+        }
+    }
+}
+
+// Category names in the products dropdown are long and set in caps; give them
+// room and stop them wrapping mid-name.
+header #top_menu .dropdown-menu {
+    padding-block: 0.5rem;
+
+    .dropdown-item {
+        padding: 0.5rem 1.25rem;
+        white-space: normal;
+        line-height: 1.35;
+    }
+}

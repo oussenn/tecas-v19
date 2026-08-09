@@ -2,11 +2,15 @@
     'name': 'TECAS Website Blocks',
     'summary': 'Drag-and-drop building blocks for the TECAS website (hero, engagements)',
     'description': """
-Building blocks only. This module deliberately does NOT touch the header, the
-footer or the shop pages — installing it adds blocks to the website editor and
+Mainly building blocks: installing this adds blocks to the website editor and
 changes no existing page until one of them is dropped onto a page.
+
+Two deliberate exceptions, each in its own file so they stay easy to find and
+to drop: views/shop_filters.xml scopes the shop's attribute filters to the
+category being browsed, and static/src/scss/header.scss spaces out the top
+menu. Neither changes colours or structure.
 """,
-    'version': '19.0.5.0.0',
+    'version': '19.0.6.0.0',
     'depends': ['website'],
     'data': [
         'views/snippets/s_tecas_hero.xml',
@@ -21,6 +25,7 @@ changes no existing page until one of them is dropped onto a page.
     'assets': {
         'web.assets_frontend': [
             'tecas_website_blocks/static/src/scss/blocks.scss',
+            'tecas_website_blocks/static/src/scss/header.scss',
         ],
     },
     'author': 'TECAS',
