@@ -8,6 +8,14 @@
     The background is a normal Odoo background image (oe_img_bg + inline
     background-image), so the client can swap the photo from the editor
     without touching code.
+
+    The panel cut-out is a plain <img>, a direct child of the section rather
+    than of .container: it is absolutely positioned against the SECTION so it
+    can hang past the orange rule into the block below. Anchoring it to the
+    container instead would tie its bottom edge to the height of the text card,
+    which floats mid-section, and the overhang would never reach the rule.
+    Being an ordinary img it stays double-clickable in the editor, so the photo
+    can be swapped without touching code.
 -->
 <template id="s_tecas_hero" name="Hero TECAS">
     <section class="s_tecas_hero oe_img_bg o_bg_img_center"
@@ -27,7 +35,10 @@
                             Livraison de matériel solaire partout au Maroc.
                         </p>
                         <p class="mb-0">
-                            <a href="/contactus" class="btn s_tecas_btn_orange btn-lg">
+                            <!-- /contactus exists but is unpublished (404s for
+                                 visitors); /demande-devis is the site's live
+                                 quote-request page. -->
+                            <a href="/demande-devis" class="btn s_tecas_btn_orange btn-lg">
                                 Demander une évaluation gratuite
                             </a>
                         </p>
@@ -35,6 +46,8 @@
                 </div>
             </div>
         </div>
+        <img class="s_tecas_hero_panel" src="/web/image/27506"
+             alt="Panneaux solaires monocristallin et polycristallin"/>
         <div class="s_tecas_hero_rule"/>
     </section>
 </template>

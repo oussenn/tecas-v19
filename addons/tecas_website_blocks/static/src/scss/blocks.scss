@@ -31,6 +31,9 @@
 // ---------------------------------------------------------------- hero
 .s_tecas_hero {
     position: relative;
+    // Lifts the whole section — and with it the panel that overhangs the
+    // bottom edge — above the block that follows in the document.
+    z-index: 1;
     display: flex;
     align-items: center;
     min-height: 78vh;
@@ -71,15 +74,66 @@
         height: 18px;
         background: var(--tecas-orange);
     }
+
+    .s_tecas_hero_panel {
+        display: block;
+        height: auto;
+        // Sits above the rule, which is positioned too and would otherwise
+        // paint over the part of the panel that crosses it.
+        z-index: 3;
+        // A cast shadow, not a box shadow: the source PNG is a transparent
+        // cut-out, so drop-shadow traces the panels instead of a rectangle.
+        filter: drop-shadow(0 22px 38px rgba(15, 26, 51, 0.32));
+    }
 }
 
-@media (max-width: 767.98px) {
+// Desktop: the panel breaks out of the section and crosses the orange rule.
+//
+// `right` mirrors Bootstrap's container max-width at each breakpoint
+// (960 / 1140 / 1320) so the panel lines up with the grid the card sits on.
+// A single calc() cannot do this — the container width jumps in steps rather
+// than scaling — so each step is spelled out.
+@media (min-width: 992px) {
+    .s_tecas_hero .s_tecas_hero_panel {
+        position: absolute;
+        bottom: -5rem;
+        right: calc((100% - 960px) / 2);
+        width: 34%;
+        min-width: 17rem;
+        max-width: 30rem;
+    }
+}
+
+@media (min-width: 1200px) {
+    .s_tecas_hero .s_tecas_hero_panel {
+        right: calc((100% - 1140px) / 2);
+    }
+}
+
+@media (min-width: 1400px) {
+    .s_tecas_hero .s_tecas_hero_panel {
+        right: calc((100% - 1320px) / 2);
+    }
+}
+
+// Below lg the card goes full width, so there is no room beside it: the panel
+// drops under the text and still crosses the rule, keeping the same idea.
+@media (max-width: 991.98px) {
     .s_tecas_hero {
         min-height: 0;
+        padding: 4rem 0 5rem;
 
         .s_tecas_hero_card {
             padding: 2rem 1.5rem;
             border-radius: 20px;
+        }
+
+        // -6.5rem against the section's 5rem bottom padding leaves the panel
+        // hanging ~1.5rem past the rule.
+        .s_tecas_hero_panel {
+            width: 70%;
+            max-width: 20rem;
+            margin: 2rem auto -6.5rem;
         }
     }
 }

@@ -6,7 +6,7 @@ Building blocks only. This module deliberately does NOT touch the header, the
 footer or the shop pages — installing it adds blocks to the website editor and
 changes no existing page until one of them is dropped onto a page.
 """,
-    'version': '19.0.4.0.0',
+    'version': '19.0.5.0.0',
     'depends': ['website'],
     'data': [
         'views/snippets/s_tecas_hero.xml',
