@@ -127,12 +127,26 @@
 // drops under the text and still crosses the rule, keeping the same idea.
 @media (max-width: 991.98px) {
     .s_tecas_hero {
+        // MUST stay block here. The section is a flex row on desktop, which is
+        // harmless while the panel is absolutely positioned (out of flow). The
+        // moment the panel goes back into the flow it becomes a second flex
+        // ITEM and lands beside the card rather than under it — squeezing both
+        // columns until the CTA wraps into a blob. Dropping to block is what
+        // stacks them.
+        display: block;
         min-height: 0;
         padding: 4rem 0 5rem;
 
         .s_tecas_hero_card {
             padding: 2rem 1.5rem;
             border-radius: 20px;
+        }
+
+        // Long label, narrow screen: without this the pill wraps onto four
+        // lines and its 999px radius turns it into a circle.
+        .s_tecas_btn_orange {
+            padding: 0.75rem 1.25rem;
+            font-size: 0.9375rem;
         }
 
         // -6.5rem against the section's 5rem bottom padding leaves the panel
