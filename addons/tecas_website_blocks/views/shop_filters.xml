@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!--
+    Scope the shop filter VALUES to the category being browsed.
+
+    Odoo v19 scopes the filter *attributes* correctly (the controller groups
+    product.template.attribute.line over the current shop domain) but each
+    attribute then renders `a.value_ids` — every value that attribute has
+    anywhere in the catalogue. Measured on this database:
+
+        category                 attribute    rendered   actually in category
+        ONDULEUR SOLAIRE ON-GRID Marque            103                      2
+        ONDULEUR SOLAIRE ON-GRID Puissance         274                     25
+        PANNEAUX SOLAIRE         Capacité          318                     18
+
+    So browsing "Onduleur" offered every brand in the shop, and Capacité listed
+    values that are inverter descriptions — which is what made the filters look
+    like they belonged to the wrong category.
+
+    Fix: compute, once per attribute, the value ids actually present on
+    published products in the current category, then render only those. The
+    lookup mirrors the controller's own domain so the two stay consistent.
+-->
+
+<!-- 1. Publish the scoped value ids into the loop's context, so both the
+        radio/multi and the select renderers can use them. -->
+<template id="shop_filter_scope" inherit_id="website_sale.product_attribute_filters_form"
+          name="TECAS: scope filter values to category">
+    <xpath expr="(//t[@t-set='_status'])[1]" position="before">
+        <t t-set="tecas_scope_ids"
+           t-value="env['product.template.attribute.line'].sudo().search([
+                        ('attribute_id', '=', a.id),
+                        ('product_tmpl_id', 'in',
+                         env['product.template'].sudo()._search(
+                             [('is_published', '=', True)]
+                             + ([('public_categ_ids', 'child_of', category.id)] if category else [])
+                         ))
+                    ]).value_ids.ids"/>
+    </xpath>
+
+    <!-- A filter with fewer than two usable values in this category is noise. -->
+    <xpath expr="//div[@t-if='a.value_ids and len(a.value_ids) &gt; 1']" position="attributes">
+        <attribute name="t-if">len(tecas_scope_ids) &gt; 1</attribute>
+    </xpath>
+</template>
+
+<!-- 2. Radio / multi-checkbox renderer (36 of the 41 attributes use this). -->
+<template id="shop_filter_radio_scoped" inherit_id="website_sale.filter_radio_and_multi_attributes"
+          name="TECAS: scoped radio filter values">
+    <xpath expr="//t[@t-set='sorted_values']" position="attributes">
+        <attribute name="t-value">sorted(a.value_ids.filtered(lambda v: v.id in tecas_scope_ids), key=lambda v: v.id not in attrib_set)</attribute>
+    </xpath>
+</template>
+
+<!-- 3. Select renderer. -->
+<template id="shop_filter_select_scoped" inherit_id="website_sale.filter_select_attributes"
+          name="TECAS: scoped select filter values">
+    <xpath expr="//t[@t-foreach='a.value_ids']" position="attributes">
+        <attribute name="t-foreach">a.value_ids.filtered(lambda v: v.id in tecas_scope_ids)</attribute>
+    </xpath>
+</template>
+
+</odoo>

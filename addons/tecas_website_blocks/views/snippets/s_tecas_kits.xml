@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!--
+    "Kits solaires": editorial column on the left (orange heading, lead, image
+    sitting on two orange shapes) and a bordered card on the right listing the
+    product families, each linking into the shop.
+
+    The orange shapes behind the image are drawn in CSS, not baked into the
+    picture, so swapping the photo in the editor keeps the composition.
+-->
+<template id="s_tecas_kits" name="Kits solaires">
+    <section class="s_tecas_kits pt64 pb64">
+        <div class="container">
+            <div class="row align-items-start">
+
+                <div class="col-lg-5 pb32">
+                    <h2 class="s_tecas_kits_title">
+                        Inspirez-vous de kits solaires complets pour chaque type d'usage
+                    </h2>
+                    <p class="s_tecas_kits_lead">
+                        Des exemples concrets de kits solaires adaptés à chaque besoin :
+                        maison, entreprise, ferme ou site isolé. Chaque kit inclut le
+                        matériel nécessaire.
+                    </p>
+                    <div class="s_tecas_kits_media">
+                        <img src="/web/image/8063" class="img img-fluid"
+                             alt="Kit solaire complet TECAS"/>
+                    </div>
+                </div>
+
+                <div class="col-lg-7">
+                    <div class="s_tecas_kits_card">
+
+                        <div class="s_tecas_kit_item">
+                            <h3 class="s_tecas_kit_name">Panneaux solaires</h3>
+                            <p>
+                                Des panneaux solaires performants et durables, sélectionnés
+                                parmi les meilleures marques du marché pour garantir une
+                                production d'énergie solaire optimale et stable, même dans
+                                des conditions climatiques exigeantes.
+                            </p>
+                            <a href="/shop" class="s_tecas_kit_link">Voir nos panneaux solaires &gt;</a>
+                        </div>
+
+                        <div class="s_tecas_kit_item">
+                            <h3 class="s_tecas_kit_name">Onduleurs solaires</h3>
+                            <p>
+                                Les onduleurs solaires convertissent l'énergie solaire en
+                                électricité utilisable pour votre maison ou votre entreprise.
+                                Ils assurent une performance stable du système et permettent
+                                la gestion intelligente de l'énergie.
+                            </p>
+                            <a href="/shop" class="s_tecas_kit_link">Voir nos onduleurs &gt;</a>
+                        </div>
+
+                        <div class="s_tecas_kit_item">
+                            <h3 class="s_tecas_kit_name">Système de fixation solaire</h3>
+                            <p>
+                                Les structures de fixation assurent un montage sécurisé et
+                                optimal de vos panneaux solaires, qu'ils soient installés en
+                                toiture ou au sol. Robustes et conçus pour durer.
+                            </p>
+                            <a href="/shop" class="s_tecas_kit_link">Voir nos systèmes de fixation &gt;</a>
+                        </div>
+
+                        <div class="s_tecas_kit_item">
+                            <h3 class="s_tecas_kit_name">
+                                Batteries solaires (essentielles pour une autonomie optimale)
+                            </h3>
+                            <p>
+                                Les batteries solaires permettent de stocker l'énergie produite
+                                en journée pour une utilisation en soirée ou lors des coupures
+                                de courant. Elles garantissent une alimentation continue,
+                                réduisant la dépendance au réseau public.
+                            </p>
+                            <a href="/shop" class="s_tecas_kit_link">Voir nos batteries solaires &gt;</a>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+</template>
+
+</odoo>

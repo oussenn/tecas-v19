@@ -24,9 +24,21 @@ DELETE FROM ir_module_module WHERE name IN (
 -- BROKEN VIEWS: deactivate broken Studio/gen_key views
 -- ============================================================
 
--- /shop 500: products_attributes_filters xpath broken in v19
-UPDATE ir_ui_view SET active = false
-WHERE arch_db::text ILIKE '%products_attributes_filters%';
+-- /shop 500: caused by the ORPHAN product_brand_ecommerce view, whose module
+-- is no longer installed, xpath-ing into the shop filters.
+--
+-- 2026-08-09: this used to read
+--     WHERE arch_db::text ILIKE '%products_attributes_filters%'
+-- which was far too broad. "products_attributes_filters" is NOT broken in v19 —
+-- it is a live CSS class in core website_sale.products (templates.xml:614) that
+-- website_sale.products_attributes legitimately xpaths into (templates.xml:1799).
+-- The old statement therefore also disabled website_sale.products (1252),
+-- website_sale.products_attributes (1272) and its website copy (2129), which is
+-- why the shop had no attribute filter sidebar at all. Target the orphan only.
+UPDATE ir_ui_view v SET active = false
+FROM ir_model_data d
+WHERE d.model = 'ir.ui.view' AND d.res_id = v.id
+  AND d.module = 'product_brand_ecommerce';
 
 -- Product page 500: orphan duplicate alternative_products with old itemprop selector
 -- Keep only the lowest id (original), deactivate duplicates

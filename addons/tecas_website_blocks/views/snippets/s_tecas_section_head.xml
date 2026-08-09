@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!--
+    Reusable section heading: blue pill label above an orange title.
+    Kept as its own block because the design repeats it before several
+    sections (product carousels, new arrivals, ...) — one block, many uses.
+-->
+<template id="s_tecas_section_head" name="Titre de section">
+    <section class="s_tecas_section_head pt48 pb24">
+        <div class="container text-center">
+            <p class="mb-3">
+                <span class="s_tecas_pill">Panneaux, onduleurs, batteries</span>
+            </p>
+            <h2 class="s_tecas_section_title">Votre matériel solaire par type</h2>
+        </div>
+    </section>
+</template>
+
+</odoo>

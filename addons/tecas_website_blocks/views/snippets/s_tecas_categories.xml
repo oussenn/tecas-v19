@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!--
+    Category tiles, read live from product.public.category — add, rename or
+    reorder an eCommerce category and this block follows, with no page edit.
+
+    Only categories that actually hold a published product get a tile.
+    Verified on prod: /shop/category/<id> returns 404 for a category with no
+    published products (290, 292, 294, 295, 347, 356 all 404 today), so
+    rendering every category would put six dead links on the homepage. As soon
+    as a product is published in one of them, its tile appears by itself.
+
+    The same lookup doubles as the image source, so a tile can never render
+    blank: category image if one is set, otherwise the first published
+    product's image.
+
+    Category names are printed with t-out, not t-field: they must not become
+    editable in the page editor, or editing the page would rewrite the
+    category records themselves.
+
+    Uses env rather than request.env, and a numeric category URL rather than
+    slug(): both of those are only bound during a frontend HTTP request, which
+    would make this block impossible to render (or test) anywhere else. Odoo
+    accepts a bare id and redirects to the canonical slug URL — verified:
+    /shop/category/286 -> /shop/category/panneaux-solaire-286.
+-->
+<template id="s_tecas_categories" name="Catégories produits">
+    <section class="s_tecas_categories pt24 pb64">
+        <div class="container">
+            <t t-set="tecas_cats"
+               t-value="env['product.public.category'].sudo().search(
+                            [('parent_id', '=', False)], order='sequence, name')"/>
+            <div class="row g-3">
+                <t t-foreach="tecas_cats" t-as="cat">
+                    <t t-set="cat_prod"
+                       t-value="env['product.template'].sudo().search(
+                                    [('public_categ_ids', 'child_of', cat.id),
+                                     ('is_published', '=', True)], limit=1)"/>
+                    <div t-if="cat_prod" class="col-6 col-lg-3">
+                        <t t-set="cat_img"
+                           t-value="'/web/image/product.public.category/%s/image_512' % cat.id
+                                    if cat.image_512 else
+                                    '/web/image/product.template/%s/image_512' % cat_prod.id"/>
+                        <a t-attf-href="/shop/category/#{cat.id}" class="s_tecas_cat_tile">
+                            <span class="s_tecas_cat_img">
+                                <img t-att-src="cat_img" t-att-alt="cat.name" loading="lazy"/>
+                            </span>
+                            <span class="s_tecas_cat_name" t-out="cat.name"/>
+                        </a>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </section>
+</template>
+
+</odoo>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Puts the TECAS blocks in their own category in the website editor. -->
+    <template id="tecas_blocks_snippets" inherit_id="website.snippets" priority="20">
+
+        <xpath expr="//snippets[@id='snippet_groups']//t[@t-snippet][last()]" position="after">
+            <t snippet-group="tecas" t-snippet="website.s_snippet_group" string="TECAS"
+               t-thumbnail="/tecas_website_blocks/static/src/img/snippets_thumbs/group_tecas.svg"/>
+        </xpath>
+
+        <xpath expr="//snippets[@id='snippet_structure']//t[@t-snippet][last()]" position="after">
+            <t t-snippet="tecas_website_blocks.s_tecas_hero" string="Hero TECAS" group="tecas"
+               t-thumbnail="/tecas_website_blocks/static/src/img/snippets_thumbs/s_tecas_hero.svg">
+                <keywords>hero, accueil, banniere, solaire, devis, evaluation</keywords>
+            </t>
+            <t t-snippet="tecas_website_blocks.s_tecas_engagements" string="Nos engagements" group="tecas"
+               t-thumbnail="/tecas_website_blocks/static/src/img/snippets_thumbs/s_tecas_engagements.svg">
+                <keywords>engagements, garantie, livraison, maintenance, services, confiance</keywords>
+            </t>
+            <t t-snippet="tecas_website_blocks.s_tecas_section_head" string="Titre de section" group="tecas"
+               t-thumbnail="/tecas_website_blocks/static/src/img/snippets_thumbs/s_tecas_section_head.svg">
+                <keywords>titre, section, pill, badge, intertitre</keywords>
+            </t>
+            <t t-snippet="tecas_website_blocks.s_tecas_categories" string="Catégories produits" group="tecas"
+               t-thumbnail="/tecas_website_blocks/static/src/img/snippets_thumbs/s_tecas_categories.svg">
+                <keywords>categories, rayons, produits, grille, tuiles, boutique</keywords>
+            </t>
+            <t t-snippet="tecas_website_blocks.s_tecas_kits" string="Kits solaires" group="tecas"
+               t-thumbnail="/tecas_website_blocks/static/src/img/snippets_thumbs/s_tecas_kits.svg">
+                <keywords>kits, familles, panneaux, onduleurs, batteries, fixation</keywords>
+            </t>
+            <t t-snippet="tecas_website_blocks.s_tecas_solutions" string="Nos solutions" group="tecas"
+               t-thumbnail="/tecas_website_blocks/static/src/img/snippets_thumbs/s_tecas_solutions.svg">
+                <keywords>solutions, services, consultation, installation, maintenance</keywords>
+            </t>
+        </xpath>
+
+    </template>
+
+</odoo>

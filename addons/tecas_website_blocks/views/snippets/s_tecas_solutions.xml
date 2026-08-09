@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!--
+    "Nos solutions complètes": three cards, each headed by a circular blue
+    badge holding a line icon. Icons are inline SVG so they inherit the
+    block's colour tokens instead of shipping image files.
+-->
+<template id="s_tecas_solutions" name="Nos solutions">
+    <section class="s_tecas_solutions pt64 pb64">
+        <div class="container">
+            <div class="row">
+                <div class="col-12 text-center pb32">
+                    <h2 class="s_tecas_section_title">Nos solutions complètes en énergie solaire</h2>
+                </div>
+            </div>
+            <div class="row">
+
+                <div class="col-lg-4 pt16 pb16">
+                    <div class="s_tecas_sol_card h-100">
+                        <div class="s_tecas_sol_badge">
+                            <svg viewBox="0 0 64 64" role="img" aria-label="Consultation">
+                                <g fill="none" stroke="#fff" stroke-width="3"
+                                   stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M10 46 c6-5 12-5 18-1 h10 a4 4 0 0 0 0-8 h-12"/>
+                                    <path d="M10 46 l6 6"/>
+                                </g>
+                                <g fill="none" stroke="var(--tecas-orange)" stroke-width="3"
+                                   stroke-linecap="round">
+                                    <circle cx="36" cy="21" r="7"/>
+                                    <path d="M36 8 v3 M36 31 v3 M23 21 h3 M46 21 h3
+                                             M27 12 l2 2 M43 28 l2 2 M45 12 l-2 2 M29 28 l-2 2"/>
+                                </g>
+                            </svg>
+                        </div>
+                        <h3 class="s_tecas_sol_title">Consultation gratuite en énergie solaire</h3>
+                        <p class="s_tecas_sol_text">
+                            Profitez de notre consultation gratuite pour découvrir comment
+                            l'énergie solaire peut transformer votre consommation énergétique.
+                            Nos experts vous fourniront une analyse personnalisée, mettant en
+                            lumière les économies réalisables et les avantages d'une
+                            installation de panneaux solaires adaptés à vos besoins.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 pt16 pb16">
+                    <div class="s_tecas_sol_card h-100">
+                        <div class="s_tecas_sol_badge">
+                            <svg viewBox="0 0 64 64" role="img" aria-label="Installation">
+                                <g fill="none" stroke="#fff" stroke-width="3"
+                                   stroke-linejoin="round" stroke-linecap="round">
+                                    <path d="M14 44 h36 l-5-18 h-26 Z"/>
+                                    <path d="M20 35 h24 M32 26 v18 M32 44 v8 M24 52 h16"/>
+                                </g>
+                                <g fill="none" stroke="var(--tecas-orange)" stroke-width="3"
+                                   stroke-linecap="round">
+                                    <circle cx="46" cy="15" r="5"/>
+                                    <path d="M46 4 v3 M46 23 v3 M35 15 h3 M54 15 h3"/>
+                                </g>
+                            </svg>
+                        </div>
+                        <h3 class="s_tecas_sol_title">Installation de panneaux solaires</h3>
+                        <p class="s_tecas_sol_text">
+                            Nos experts en énergie solaire réalisent l'installation de panneaux
+                            solaires de haute qualité, en optimisant chaque étape pour garantir
+                            une performance maximale et des économies d'énergie sur le long
+                            terme. Faites confiance à notre équipe pour une installation rapide,
+                            sécurisée et adaptée à vos besoins spécifiques.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 pt16 pb16">
+                    <div class="s_tecas_sol_card h-100">
+                        <div class="s_tecas_sol_badge">
+                            <svg viewBox="0 0 64 64" role="img" aria-label="Maintenance">
+                                <g fill="none" stroke="#fff" stroke-width="3"
+                                   stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 14 a8 8 0 0 0 10 10 l18 18 a4 4 0 0 1-6 6
+                                             L22 30 a8 8 0 0 1-10-10 Z"/>
+                                </g>
+                                <g fill="none" stroke="var(--tecas-orange)" stroke-width="3"
+                                   stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M46 14 l-16 16 M42 10 l8 8 M30 30 l-14 14
+                                             a4 4 0 0 0 6 6 l14-14"/>
+                                </g>
+                            </svg>
+                        </div>
+                        <h3 class="s_tecas_sol_title">Maintenance et réparation de votre système solaire</h3>
+                        <p class="s_tecas_sol_text">
+                            Chez Tecas Energie Solaire, nous comprenons l'importance de votre
+                            système solaire pour assurer votre confort et maximiser vos économies
+                            d'énergie. Nos spécialistes en maintenance et réparation garantissent
+                            le bon fonctionnement de vos panneaux solaires et onduleurs, avec un
+                            service rapide et efficace pour prolonger la durée de vie de votre
+                            installation.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+</template>
+
+</odoo>

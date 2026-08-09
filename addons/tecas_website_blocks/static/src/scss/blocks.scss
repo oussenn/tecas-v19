@@ -1,0 +1,319 @@
+// TECAS website blocks.
+//
+// The two brand colours are declared once, here. Production's Odoo palette
+// (o-color-5 #BC5924, o-color-2 #2E82FF) does not match the approved design,
+// so these blocks carry their own tokens rather than inherit colours that
+// would render the design wrong. Change these two values to restyle every
+// block in this module.
+
+:root {
+    --tecas-blue: #1D3C9B;
+    --tecas-orange: #F5A31E;
+    --tecas-ink: #1B2A4A;
+}
+
+.s_tecas_btn_orange {
+    background-color: var(--tecas-orange);
+    border-color: var(--tecas-orange);
+    color: #fff;
+    border-radius: 999px;
+    padding: 0.85rem 2rem;
+    font-weight: 600;
+
+    &:hover,
+    &:focus {
+        background-color: color-mix(in srgb, var(--tecas-orange) 88%, #000);
+        border-color: color-mix(in srgb, var(--tecas-orange) 88%, #000);
+        color: #fff;
+    }
+}
+
+// ---------------------------------------------------------------- hero
+.s_tecas_hero {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 78vh;
+    padding: 6rem 0 7rem;
+
+    .s_tecas_hero_card {
+        background: rgba(255, 255, 255, 0.82);
+        border: 1px solid rgba(255, 255, 255, 0.9);
+        border-radius: 28px;
+        padding: 3rem 3.25rem;
+        backdrop-filter: blur(3px);
+        max-width: 46rem;
+    }
+
+    .s_tecas_hero_title {
+        color: var(--tecas-blue);
+        font-weight: 800;
+        line-height: 1.16;
+        letter-spacing: -0.01em;
+        font-size: clamp(1.9rem, 3.4vw, 3rem);
+        margin-bottom: 1.5rem;
+    }
+
+    .s_tecas_hero_lead {
+        color: var(--tecas-ink);
+        font-size: 1.0625rem;
+        line-height: 1.65;
+        margin-bottom: 2rem;
+        max-width: 40rem;
+    }
+
+    // The orange rule that closes the section in the approved design.
+    .s_tecas_hero_rule {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 18px;
+        background: var(--tecas-orange);
+    }
+}
+
+@media (max-width: 767.98px) {
+    .s_tecas_hero {
+        min-height: 0;
+
+        .s_tecas_hero_card {
+            padding: 2rem 1.5rem;
+            border-radius: 20px;
+        }
+    }
+}
+
+// -------------------------------------------------------- engagements
+.s_tecas_engagements {
+    .s_tecas_eng_title {
+        color: var(--tecas-orange);
+        font-weight: 800;
+        font-size: clamp(1.6rem, 2.6vw, 2.25rem);
+        margin-bottom: 0.75rem;
+    }
+
+    .s_tecas_eng_lead {
+        color: var(--tecas-ink);
+        margin-bottom: 0;
+    }
+
+    .s_tecas_eng_icon svg {
+        width: 96px;
+        height: 96px;
+        display: block;
+        margin: 0 auto 1.5rem;
+    }
+
+    // Icon colours ride the same tokens as the type.
+    .s_tecas_ink {
+        stroke: var(--tecas-blue);
+    }
+
+    .s_tecas_accent {
+        stroke: var(--tecas-orange);
+    }
+
+    .s_tecas_eng_label {
+        color: var(--tecas-blue);
+        font-weight: 700;
+        font-size: 1.125rem;
+        margin-bottom: 0;
+    }
+}
+
+// ------------------------------------------------------- section heading
+.s_tecas_pill {
+    display: inline-block;
+    background: var(--tecas-blue);
+    color: #fff;
+    border-radius: 999px;
+    padding: 0.55rem 1.5rem;
+    font-size: 1rem;
+}
+
+.s_tecas_section_title {
+    color: var(--tecas-orange);
+    font-weight: 800;
+    font-size: clamp(1.6rem, 2.6vw, 2.25rem);
+    margin-bottom: 0;
+}
+
+// ------------------------------------------------------ category tiles
+.s_tecas_categories {
+    .s_tecas_cat_tile {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        height: 100%;
+        padding: 1.25rem;
+        border-radius: 12px;
+        background: #F6F7F9;
+        text-decoration: none;
+        transition: background 0.18s ease, transform 0.18s ease;
+
+        &:hover {
+            background: color-mix(in srgb, var(--tecas-blue) 8%, #F6F7F9);
+            transform: translateY(-2px);
+        }
+    }
+
+    .s_tecas_cat_img {
+        flex: 0 0 82px;
+        width: 82px;
+        height: 82px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            mix-blend-mode: multiply;   // drops the white box around cut-out product shots
+        }
+    }
+
+    .s_tecas_cat_name {
+        color: var(--tecas-ink);
+        font-size: 1.0625rem;
+        line-height: 1.35;
+        font-weight: 500;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .s_tecas_categories .s_tecas_cat_tile {
+        transition: none;
+
+        &:hover {
+            transform: none;
+        }
+    }
+}
+
+// -------------------------------------------------------------- kits
+.s_tecas_kits {
+    .s_tecas_kits_title {
+        color: var(--tecas-orange);
+        font-weight: 800;
+        font-size: clamp(1.5rem, 2.3vw, 2rem);
+        line-height: 1.25;
+        margin-bottom: 1.25rem;
+    }
+
+    .s_tecas_kits_lead {
+        color: var(--tecas-ink);
+        font-size: 1.0625rem;
+        line-height: 1.6;
+        margin-bottom: 2rem;
+    }
+
+    // Orange shapes sit behind the photo, so changing the photo in the
+    // editor cannot break the composition.
+    .s_tecas_kits_media {
+        position: relative;
+        padding: 1.5rem 0 1.5rem 1.5rem;
+
+        &::before,
+        &::after {
+            content: "";
+            position: absolute;
+            background: var(--tecas-orange);
+            z-index: 0;
+        }
+
+        &::before {
+            top: 0;
+            left: 0;
+            width: 38%;
+            height: 46%;
+        }
+
+        &::after {
+            right: 6%;
+            bottom: 0;
+            width: 42%;
+            height: 38%;
+        }
+
+        img {
+            position: relative;
+            z-index: 1;
+            display: block;
+            width: 100%;
+        }
+    }
+
+    .s_tecas_kits_card {
+        border: 1.5px solid var(--tecas-blue);
+        border-radius: 14px;
+        padding: 1.75rem 2rem 0.5rem;
+    }
+
+    .s_tecas_kit_item {
+        padding-bottom: 1.5rem;
+
+        p {
+            color: var(--tecas-ink);
+            margin-bottom: 0.5rem;
+        }
+    }
+
+    .s_tecas_kit_name {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #111;
+        margin-bottom: 0.5rem;
+    }
+
+    .s_tecas_kit_link {
+        color: #4f7cf7;
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+// --------------------------------------------------------- solutions
+.s_tecas_solutions {
+    .s_tecas_sol_card {
+        background: color-mix(in srgb, var(--tecas-blue) 7%, #fff);
+        border: 1.5px solid color-mix(in srgb, var(--tecas-blue) 35%, #fff);
+        border-radius: 16px;
+        padding: 2rem 1.75rem;
+        text-align: center;
+    }
+
+    .s_tecas_sol_badge {
+        width: 84px;
+        height: 84px;
+        border-radius: 50%;
+        background: var(--tecas-blue);
+        margin: 0 auto 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        svg {
+            width: 46px;
+            height: 46px;
+        }
+    }
+
+    .s_tecas_sol_title {
+        color: var(--tecas-blue);
+        font-weight: 700;
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .s_tecas_sol_text {
+        color: var(--tecas-ink);
+        font-size: 0.95rem;
+        line-height: 1.6;
+        margin-bottom: 0;
+    }
+}
