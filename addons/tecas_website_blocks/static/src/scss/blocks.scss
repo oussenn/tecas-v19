@@ -96,11 +96,18 @@
 @media (min-width: 992px) {
     .s_tecas_hero .s_tecas_hero_panel {
         position: absolute;
-        bottom: -5rem;
+        // Enough overhang to read as crossing the rule, while keeping the bulk
+        // of the panel up inside the hero.
+        bottom: -3.5rem;
         right: calc((100% - 960px) / 2);
-        width: 34%;
-        min-width: 17rem;
-        max-width: 30rem;
+        width: 44%;
+        min-width: 19rem;
+        max-width: 40rem;
+        // The panel is square, so its height tracks its width — on a short
+        // window that would push its top through the header. Capping the height
+        // against the section makes the browser re-derive the width from the
+        // intrinsic ratio, so it shrinks as a whole instead of overflowing.
+        max-height: 86%;
     }
 }
 
@@ -131,8 +138,8 @@
         // -6.5rem against the section's 5rem bottom padding leaves the panel
         // hanging ~1.5rem past the rule.
         .s_tecas_hero_panel {
-            width: 70%;
-            max-width: 20rem;
+            width: 78%;
+            max-width: 24rem;
             margin: 2rem auto -6.5rem;
         }
     }
