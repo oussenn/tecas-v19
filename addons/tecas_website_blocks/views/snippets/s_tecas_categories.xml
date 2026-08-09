@@ -37,7 +37,11 @@
     /shop/category/286 -> /shop/category/panneaux-solaire-286.
 -->
 <template id="s_tecas_categories" name="Catégories produits">
-    <section class="s_tecas_categories pt24 pb64">
+    <!-- data-tecas-auto marks this copy as managed by models/tecas_autosync.py,
+         which re-renders it whenever a category or a product publication
+         changes. Remove the attribute in the page and the block freezes,
+         becoming an ordinary hand-editable set of tiles. -->
+    <section class="s_tecas_categories pt24 pb64" data-tecas-auto="1">
         <div class="container">
             <t t-set="tecas_cats"
                t-value="env['product.public.category'].sudo().search(
