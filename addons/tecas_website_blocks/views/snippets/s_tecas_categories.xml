@@ -2,8 +2,19 @@
 <odoo>
 
 <!--
-    Category tiles, read live from product.public.category — add, rename or
-    reorder an eCommerce category and this block follows, with no page edit.
+    Category tiles, read live from product.public.category at the moment the
+    block is DROPPED: dragging a snippet inserts the rendered html, so the page
+    stores plain tiles and the client can then edit them like any other block.
+
+    NEVER copy this template's source into a page arch. ir_ui_view's
+    distribute_branding() strips a node's editor branding as soon as any
+    descendant carries a t-* attribute (_contains_branded), so QWeb sitting
+    inside #wrap costs #wrap its data-oe-model. The builder selects editable
+    areas with "[data-oe-model]", so the whole page then reports zero drop
+    zones and EVERY snippet category shows as undroppable — a page-wide
+    breakage with no obvious link to this block. Verified on prod 2026-08-09.
+    To refresh the tiles later, re-render this template and swap in the result;
+    do not paste the source.
 
     Only categories that actually hold a published product get a tile.
     Verified on prod: /shop/category/<id> returns 404 for a category with no
