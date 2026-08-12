@@ -1,5 +1,6 @@
 from odoo import api, fields, models
 from odoo.http import request
+from odoo.tools import is_html_empty
 
 
 class ProductProduct(models.Model):
@@ -66,10 +67,21 @@ class ProductProduct(models.Model):
             sized_variant = variant_sudo.with_context(bin_size=True)
             sized_template = template_sudo.with_context(bin_size=True)
 
-            variant.webx_name = variant_sudo.variant_web_name or template_sudo.name
-            variant.webx_description = (
-                variant_sudo.variant_web_description or template_sudo.web_description
-            )
+            # Each field falls back on its own: overriding the description does
+            # not drag the name along with it.
+            variant.webx_name = (variant_sudo.variant_web_name or '').strip() or template_sudo.name
+
+            # The HTML editor leaves "<p><br></p>" behind when you clear a field,
+            # which is truthy but renders as nothing — treat it as empty so the
+            # product's description comes back instead of a blank block.
+            variant_description = variant_sudo.variant_web_description
+            template_description = template_sudo.web_description
+            if not is_html_empty(variant_description):
+                variant.webx_description = variant_description
+            elif not is_html_empty(template_description):
+                variant.webx_description = template_description
+            else:
+                variant.webx_description = False
             if sized_variant.variant_tech_sheet_pdf:
                 filename = variant_sudo.variant_tech_sheet_filename
                 variant.webx_tech_sheet_url = self._webx_tech_sheet_url(
