@@ -262,6 +262,24 @@
         }
     }
 
+    // "Plus de produits" — the drawn tile. Ink glyph on the same pale well as
+    // the product shots, so it belongs to the grid without pretending to be a
+    // product; the accent arrives only on hover.
+    .s_tecas_cat_tile_more {
+        .s_tecas_cat_img svg {
+            width: 84px;
+            height: 84px;
+            fill: color-mix(in srgb, var(--tecas-ink) 22%, #fff);
+            stroke: color-mix(in srgb, var(--tecas-ink) 22%, #fff);
+            transition: fill 0.18s ease, stroke 0.18s ease;
+        }
+
+        &:hover .s_tecas_cat_img svg {
+            fill: var(--tecas-orange);
+            stroke: var(--tecas-orange);
+        }
+    }
+
     // The label band. Two lines of text must not make one card taller than the
     // rest, so the band is fixed-height and centres whatever it is given.
     .s_tecas_cat_name {

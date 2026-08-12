@@ -66,6 +66,24 @@
                         </a>
                     </div>
                 </t>
+                <!-- Eighth tile: the way out of the seven. Drawn rather than
+                     photographed, so it reads as navigation and not as another
+                     product family — and so it never depends on an image. -->
+                <div class="col-6 col-lg-3">
+                    <a href="/shop" class="s_tecas_cat_tile s_tecas_cat_tile_more">
+                        <span class="s_tecas_cat_img">
+                            <svg viewBox="0 0 96 96" role="img" aria-label="Plus de produits"
+                                 xmlns="http://www.w3.org/2000/svg">
+                                <rect x="10" y="10" width="32" height="32" rx="5"/>
+                                <rect x="54" y="10" width="32" height="32" rx="5"/>
+                                <rect x="10" y="54" width="32" height="32" rx="5"/>
+                                <path d="M70 56v28M56 70h28" stroke-width="7"
+                                      stroke-linecap="round" fill="none"/>
+                            </svg>
+                        </span>
+                        <span class="s_tecas_cat_name">Plus de produits</span>
+                    </a>
+                </div>
             </div>
         </div>
     </section>
