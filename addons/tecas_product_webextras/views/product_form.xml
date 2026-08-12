@@ -1,4 +1,6 @@
 <odoo>
+
+  <!-- Product level: the defaults every variant inherits. -->
   <record id="view_product_form_webextras" model="ir.ui.view">
     <field name="name">product.template.form.webextras</field>
     <field name="model">product.template</field>
@@ -7,6 +9,10 @@
       <xpath expr="//notebook" position="inside">
         <page string="Site Web (Extras)" name="website_webextras">
           <group string="Contenu site web">
+            <div class="text-muted mb-2" colspan="2">
+              Ce contenu s'applique à toutes les variantes. Pour n'en changer qu'une,
+              ouvrez la variante et remplissez l'onglet « Site Web (Extras) » de celle-ci.
+            </div>
             <field name="web_description" widget="html"/>
             <separator string="Fiche technique"/>
             <field name="tech_sheet_pdf" filename="tech_sheet_filename"/>
@@ -18,4 +24,35 @@
       </xpath>
     </field>
   </record>
+
+  <!-- Variant level: overrides. Empty fields fall back to the product's. -->
+  <record id="view_product_variant_form_webextras" model="ir.ui.view">
+    <field name="name">product.product.form.webextras</field>
+    <field name="model">product.product</field>
+    <field name="inherit_id" ref="product.product_normal_form_view"/>
+    <field name="arch" type="xml">
+      <xpath expr="//notebook" position="inside">
+        <page string="Site Web (Extras)" name="website_webextras_variant">
+          <group string="Contenu propre à cette variante">
+            <div class="text-muted mb-2" colspan="2">
+              Laissez un champ vide pour reprendre celui du produit.
+              Ce qui est rempli ici ne s'applique qu'à cette variante.
+            </div>
+            <field name="variant_web_name" placeholder="Nom affiché sur le site"/>
+            <field name="variant_web_description" widget="html"/>
+            <separator string="Fiche technique"/>
+            <field name="variant_tech_sheet_pdf" filename="variant_tech_sheet_filename"/>
+            <field name="variant_tech_sheet_filename" placeholder="fiche-technique.pdf"/>
+            <separator string="Galerie d’images"/>
+            <field name="variant_gallery_attachment_ids" widget="many2many_binary"/>
+          </group>
+          <group string="Ce qui sera affiché" col="1">
+            <field name="webx_name" readonly="1"/>
+            <field name="webx_description" readonly="1" widget="html"/>
+          </group>
+        </page>
+      </xpath>
+    </field>
+  </record>
+
 </odoo>
