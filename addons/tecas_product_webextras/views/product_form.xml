@@ -25,6 +25,28 @@
     </field>
   </record>
 
+  <!-- Variant level, "easy" form: this is the one the Variantes d'article
+       action actually opens, and it has sections instead of a notebook. -->
+  <record id="view_product_variant_easy_form_webextras" model="ir.ui.view">
+    <field name="name">product.product.easy.form.webextras</field>
+    <field name="model">product.product</field>
+    <field name="inherit_id" ref="product.product_variant_easy_edit_view"/>
+    <field name="arch" type="xml">
+      <xpath expr="//group[@name='sales']" position="after">
+        <group name="tecas_webextras" string="Site Web (Extras)">
+          <div class="text-muted mb-2" colspan="2">
+            Laissez vide pour reprendre le contenu du produit.
+          </div>
+          <field name="variant_web_name" placeholder="Nom affiché sur le site"/>
+          <field name="variant_web_description" widget="html"/>
+          <field name="variant_tech_sheet_pdf" filename="variant_tech_sheet_filename"/>
+          <field name="variant_tech_sheet_filename" placeholder="fiche-technique.pdf"/>
+          <field name="variant_gallery_attachment_ids" widget="many2many_binary"/>
+        </group>
+      </xpath>
+    </field>
+  </record>
+
   <!-- Variant level: overrides. Empty fields fall back to the product's. -->
   <record id="view_product_variant_form_webextras" model="ir.ui.view">
     <field name="name">product.product.form.webextras</field>
