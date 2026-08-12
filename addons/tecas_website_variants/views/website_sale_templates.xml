@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        The grid is filled with `product.product` records by the controller when
+        "Split variants in the shop" is on. `website_sale.products_item` already
+        appends the combination name to the title when `product_variant` is set,
+        so the tile only needs that hint plus the out-of-stock treatment.
+    -->
+    <template id="products_split_variants" inherit_id="website_sale.products">
+
+        <!-- Dim the tile when the variant has nothing free to sell. -->
+        <xpath expr="//t[@t-call='website_sale.products_item']/.." position="attributes">
+            <attribute name="t-attf-class">o_wsale_product_grid_wrapper position-relative h-100 o_wsale_product_grid_wrapper_#{td_product['x']}_#{td_product['y']} #{product.id in tecas_out_of_stock_ids and 'o_tecas_variant_oos' or ''}</attribute>
+        </xpath>
+
+        <xpath expr="//t[@t-call='website_sale.products_item']" position="before">
+            <div
+                t-if="product.id in tecas_out_of_stock_ids"
+                class="o_tecas_oos_bar"
+            >Rupture de stock</div>
+        </xpath>
+
+        <xpath expr="//t[@t-call='website_sale.products_item']" position="inside">
+            <t t-if="tecas_split_variants" t-set="product_variant" t-value="product"/>
+            <t t-if="tecas_split_variants" t-set="show_variations" t-value="False"/>
+        </xpath>
+
+    </template>
+
+</odoo>
