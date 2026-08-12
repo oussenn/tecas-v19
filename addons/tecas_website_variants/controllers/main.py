@@ -26,15 +26,20 @@ class WebsiteSaleVariants(WebsiteSale):
         qcontext.setdefault('tecas_out_of_stock_ids', set())
         if not request.website.shop_split_variants:
             return response
-        self._tecas_split_variants(qcontext, page)
+        self._tecas_split_variants(qcontext, page, order=post.get('order'))
         return response
 
-    def _tecas_split_variants(self, qcontext, page):
+    def _tecas_split_variants(self, qcontext, page, order=None):
         website = request.website
         ppg = qcontext['ppg']
         ppr = qcontext['ppr']
 
         variants = self._tecas_expand_to_variants(qcontext['search_product'])
+        free_qty_by_id = self._tecas_free_qty_by_id(variants)
+        if not order:
+            # Default view: sellable stock first, "rupture de stock" at the end.
+            # An explicit sort from the visitor always wins.
+            variants = self._tecas_in_stock_first(variants, free_qty_by_id)
 
         pager = website.pager(
             url=self._get_shop_path(qcontext.get('category')),
@@ -59,7 +64,7 @@ class WebsiteSaleVariants(WebsiteSale):
             'product_variants': {variant: variant for variant in page_variants},
             'get_product_prices': lambda product: prices[product.id],
             'tecas_split_variants': True,
-            'tecas_out_of_stock_ids': self._tecas_out_of_stock_ids(page_variants),
+            'tecas_out_of_stock_ids': self._tecas_out_of_stock_ids(page_variants, free_qty_by_id),
         })
 
         # website_sale_wishlist compares `product in products_in_wishlist`, and that
@@ -84,12 +89,47 @@ class WebsiteSaleVariants(WebsiteSale):
             args['attribute_values'] = attribute_values
         return args
 
-    def _tecas_out_of_stock_ids(self, variants):
+    def _tecas_free_qty_by_id(self, variants):
+        """Free-to-sell quantity per variant, in one grouped query.
+
+        Reading `free_qty` record by record would also pull incoming/outgoing moves
+        for every variant on the page; the shop only needs on-hand minus reserved,
+        and it needs it for the whole result set to be able to sort by it.
+        """
+        if not variants:
+            return {}
+        company = request.website.company_id
+        groups = request.env['stock.quant'].sudo()._read_group(
+            [
+                ('product_id', 'in', variants.ids),
+                ('location_id.usage', '=', 'internal'),
+                ('company_id', 'in', (company.id, False)),
+            ],
+            groupby=['product_id'],
+            aggregates=['quantity:sum', 'reserved_quantity:sum'],
+        )
+        return {
+            product.id: quantity - reserved
+            for product, quantity, reserved in groups
+        }
+
+    def _tecas_in_stock_first(self, variants, free_qty_by_id):
+        """Stable partition: everything sellable first, out of stock last."""
+        in_stock, out_of_stock = [], []
+        for variant in variants:
+            bucket = out_of_stock if self._tecas_is_out_of_stock(variant, free_qty_by_id) else in_stock
+            bucket.append(variant.id)
+        return request.env['product.product'].with_context(bin_size=True).browse(in_stock + out_of_stock)
+
+    def _tecas_is_out_of_stock(self, variant, free_qty_by_id):
+        # Services and non-tracked goods are always orderable, never dimmed.
+        if not variant.is_storable:
+            return False
+        return free_qty_by_id.get(variant.id, 0) <= 0
+
+    def _tecas_out_of_stock_ids(self, variants, free_qty_by_id):
         """Variants to dim: storable, tracked, and nothing free to sell."""
-        out_of_stock = set()
-        for variant in variants.sudo():
-            if not variant.is_storable:
-                continue
-            if variant.free_qty <= 0:
-                out_of_stock.add(variant.id)
-        return out_of_stock
+        return {
+            variant.id for variant in variants
+            if self._tecas_is_out_of_stock(variant, free_qty_by_id)
+        }
