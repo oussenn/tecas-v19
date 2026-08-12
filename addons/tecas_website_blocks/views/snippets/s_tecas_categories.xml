@@ -43,9 +43,10 @@
          becoming an ordinary hand-editable set of tiles. -->
     <section class="s_tecas_categories pt24 pb64" data-tecas-auto="1">
         <div class="container">
+            <!-- Panels and inverters first, then the best-selling categories,
+                 seven in total. See models/product_public_category.py. -->
             <t t-set="tecas_cats"
-               t-value="env['product.public.category'].sudo().search(
-                            [('parent_id', '=', False)], order='sequence, name')"/>
+               t-value="env['product.public.category'].sudo()._tecas_homepage_tiles(7)"/>
             <div class="row g-3">
                 <t t-foreach="tecas_cats" t-as="cat">
                     <t t-set="cat_prod"
