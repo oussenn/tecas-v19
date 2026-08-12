@@ -1,3 +1,24 @@
 <odoo>
-    <!-- Variant price badge hiding: empty for now, will revisit if needed -->
+
+    <!--
+        Hide the "(+ 1 095,00 DH)" suffix next to every variant choice.
+
+        `website_sale.badge_extra_price` is the single template behind all three
+        variant selector styles (select, pills, radio), so switching its
+        condition off removes the suffix everywhere on the website at once.
+
+        The name deliberately avoids the words "Hide Variant Badge Extra Price":
+        startup-fixes.sh deactivates any view whose name matches that phrase, to
+        kill off some old Studio views that crashed the product page.
+    -->
+    <template
+        id="hide_variant_price_extra"
+        name="TECAS - masquer le supplement de prix des variantes"
+        inherit_id="website_sale.badge_extra_price"
+    >
+        <xpath expr="//span[@t-if='price_extra']" position="attributes">
+            <attribute name="t-if">False</attribute>
+        </xpath>
+    </template>
+
 </odoo>
