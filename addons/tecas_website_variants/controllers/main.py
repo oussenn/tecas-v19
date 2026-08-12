@@ -36,7 +36,7 @@ class WebsiteSaleVariants(WebsiteSale):
 
         variants = self._tecas_expand_to_variants(qcontext['search_product'])
         free_qty_by_id = self._tecas_free_qty_by_id(variants)
-        if not order:
+        if self._tecas_is_default_order(order):
             # Default view: sellable stock first, "rupture de stock" at the end.
             # An explicit sort from the visitor always wins.
             variants = self._tecas_in_stock_first(variants, free_qty_by_id)
@@ -88,6 +88,18 @@ class WebsiteSaleVariants(WebsiteSale):
         if attribute_values:
             args['attribute_values'] = attribute_values
         return args
+
+    def _tecas_is_default_order(self, order):
+        """Is the visitor actually expressing a sort preference?
+
+        "Featured" and the website's configured default are what the shop lands
+        on by itself, so they read as "no choice made" and stock-first still
+        applies. Picking name, price or newest is a real choice and wins.
+        """
+        if not order:
+            return True
+        order = order.strip()
+        return order in ('website_sequence asc', request.website.shop_default_sort)
 
     def _tecas_free_qty_by_id(self, variants):
         """Free-to-sell quantity per variant, in one grouped query.
