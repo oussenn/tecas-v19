@@ -2,78 +2,94 @@
 <odoo>
 
 <!--
-    "Nos engagements" — orange centred heading, lead, then three icon columns.
+    "Nos engagements" — four claims in a row, icon above two lines of text.
+    No cards and no heading: the strip is a reassurance band that sits quietly
+    under the hero, so the claims themselves carry it.
 
     The icons are inline SVG rather than an icon font or image files: they take
     their two colours from the same CSS variables as the rest of the block, so
     a colour change stays a one-line edit and there are no binary assets to
-    ship or lose.
+    ship or lose. They are PLACEHOLDERS drawn to the right weight and size —
+    swap each <svg> for the client's own artwork, keeping the wrapper div and
+    its class so the layout holds.
 -->
 <template id="s_tecas_engagements" name="Nos engagements">
-    <section class="s_tecas_engagements pt64 pb64">
+    <section class="s_tecas_engagements pt48 pb48">
         <div class="container">
             <div class="row">
-                <div class="col-12 text-center">
-                    <h2 class="s_tecas_eng_title">Nos engagements envers vous</h2>
-                    <p class="s_tecas_eng_lead">Des solutions fiables pour répondre à vos attentes.</p>
-                </div>
-            </div>
-            <div class="row pt32">
 
-                <div class="col-md-4 text-center pt24 pb24">
+                <div class="col-6 col-lg-3 s_tecas_eng_item">
                     <div class="s_tecas_eng_icon">
-                        <svg viewBox="0 0 96 96" role="img" aria-label="Livraison">
-                            <g fill="none" class="s_tecas_ink" stroke-width="3"
+                        <!-- placeholder: installations / parc solaire -->
+                        <svg viewBox="0 0 96 96" role="img" aria-label="Installations">
+                            <g fill="none" class="s_tecas_ink" stroke-width="4"
                                stroke-linejoin="round" stroke-linecap="round">
-                                <path d="M12 32 L48 18 L84 32 L48 46 Z"/>
-                                <path d="M12 32 V66 L48 80 V46"/>
-                                <path d="M84 32 V66 L48 80"/>
+                                <path d="M14 46 L26 20 H70 L82 46 Z"/>
+                                <path d="M28 46 L36 20 M48 46 V20 M68 46 L60 20"/>
+                                <path d="M14 46 H82"/>
                             </g>
                             <g fill="none" class="s_tecas_accent" stroke-width="4"
                                stroke-linejoin="round" stroke-linecap="round">
-                                <path d="M31 72 V58 M26 63 L31 58 L36 63"/>
-                                <path d="M45 77 V63 M40 68 L45 63 L50 68"/>
+                                <path d="M62 84 C62 84 74 72 74 64 A12 12 0 1 0 50 64 C50 72 62 84 62 84 Z"/>
+                                <circle cx="62" cy="63" r="4"/>
                             </g>
                         </svg>
                     </div>
-                    <h3 class="s_tecas_eng_label">Livraison partout au Maroc</h3>
+                    <p class="s_tecas_eng_label">+500 installations réalisées au Maroc</p>
                 </div>
 
-                <div class="col-md-4 text-center pt24 pb24">
+                <div class="col-6 col-lg-3 s_tecas_eng_item">
                     <div class="s_tecas_eng_icon">
+                        <!-- placeholder: devis / document -->
+                        <svg viewBox="0 0 96 96" role="img" aria-label="Devis">
+                            <g fill="none" class="s_tecas_ink" stroke-width="4"
+                               stroke-linejoin="round" stroke-linecap="round">
+                                <path d="M24 20 H72 V82 H24 Z"/>
+                                <path d="M38 20 V13 H58 V20"/>
+                                <path d="M36 44 H60 M36 56 H60 M36 68 H50"/>
+                            </g>
+                            <g fill="none" class="s_tecas_accent" stroke-width="4"
+                               stroke-linejoin="round" stroke-linecap="round">
+                                <circle cx="70" cy="70" r="14"/>
+                                <path d="M70 63 V70 L75 74"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <p class="s_tecas_eng_label">Devis gratuit et sans engagement sous 24h</p>
+                </div>
+
+                <div class="col-6 col-lg-3 s_tecas_eng_item">
+                    <div class="s_tecas_eng_icon">
+                        <!-- placeholder: garantie / matériel certifié -->
                         <svg viewBox="0 0 96 96" role="img" aria-label="Garantie">
                             <path d="M48 12 L78 24 V49 C78 66 65 76 48 84 C31 76 18 66 18 49 V24 Z"
-                                  fill="none" class="s_tecas_ink" stroke-width="3"
+                                  fill="none" class="s_tecas_ink" stroke-width="4"
                                   stroke-linejoin="round"/>
                             <path d="M34 48 L44 59 L64 37" fill="none" class="s_tecas_accent"
                                   stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </div>
-                    <h3 class="s_tecas_eng_label">Garantie &amp; service après-vente</h3>
+                    <p class="s_tecas_eng_label">Matériel certifié et garanti jusqu’à 25 ans</p>
                 </div>
 
-                <div class="col-md-4 text-center pt24 pb24">
+                <div class="col-6 col-lg-3 s_tecas_eng_item">
                     <div class="s_tecas_eng_icon">
-                        <svg viewBox="0 0 96 96" role="img" aria-label="Maintenance">
-                            <g class="s_tecas_ink" fill="none" stroke-width="3">
-                                <circle cx="46" cy="46" r="24"/>
-                                <circle cx="46" cy="46" r="10"/>
-                                <g stroke-width="5" stroke-linecap="round">
-                                    <path d="M46 16 V24"/>
-                                    <path d="M46 68 V76"/>
-                                    <path d="M16 46 H24"/>
-                                    <path d="M68 46 H76"/>
-                                    <path d="M25 25 L31 31"/>
-                                    <path d="M61 61 L67 67"/>
-                                    <path d="M67 25 L61 31"/>
-                                    <path d="M31 61 L25 67"/>
-                                </g>
+                        <!-- placeholder: intervention / livraison -->
+                        <svg viewBox="0 0 96 96" role="img" aria-label="Intervention">
+                            <g fill="none" class="s_tecas_ink" stroke-width="4"
+                               stroke-linejoin="round" stroke-linecap="round">
+                                <path d="M10 30 H52 V64 H10 Z"/>
+                                <path d="M52 40 H68 L82 52 V64 H52 Z"/>
+                                <circle cx="26" cy="72" r="7"/>
+                                <circle cx="68" cy="72" r="7"/>
                             </g>
-                            <path d="M62 62 L82 82" class="s_tecas_accent" fill="none"
-                                  stroke-width="7" stroke-linecap="round"/>
+                            <g fill="none" class="s_tecas_accent" stroke-width="4"
+                               stroke-linejoin="round" stroke-linecap="round">
+                                <path d="M4 40 H26 M4 52 H20"/>
+                            </g>
                         </svg>
                     </div>
-                    <h3 class="s_tecas_eng_label">Suivi et maintenance</h3>
+                    <p class="s_tecas_eng_label">Intervention rapide partout au Maroc</p>
                 </div>
 
             </div>

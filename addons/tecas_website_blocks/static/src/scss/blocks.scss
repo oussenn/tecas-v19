@@ -160,24 +160,20 @@
 }
 
 // -------------------------------------------------------- engagements
+// A reassurance band, not a feature grid: no cards, no rules, left-aligned so
+// the four claims read as a line of copy rather than four boxes competing for
+// attention.
 .s_tecas_engagements {
-    .s_tecas_eng_title {
-        color: var(--tecas-orange);
-        font-weight: 800;
-        font-size: clamp(1.6rem, 2.6vw, 2.25rem);
-        margin-bottom: 0.75rem;
-    }
-
-    .s_tecas_eng_lead {
-        color: var(--tecas-ink);
-        margin-bottom: 0;
+    .s_tecas_eng_item {
+        padding-top: 1.25rem;
+        padding-bottom: 1.25rem;
     }
 
     .s_tecas_eng_icon svg {
-        width: 96px;
-        height: 96px;
+        width: 52px;
+        height: 52px;
         display: block;
-        margin: 0 auto 1.5rem;
+        margin: 0 0 1rem;
     }
 
     // Icon colours ride the same tokens as the type.
@@ -190,9 +186,13 @@
     }
 
     .s_tecas_eng_label {
-        color: var(--tecas-blue);
-        font-weight: 700;
-        font-size: 1.125rem;
+        color: var(--tecas-ink);
+        font-weight: 500;
+        font-size: 1rem;
+        line-height: 1.5;
+        // Keeps each claim to roughly two lines, as in the approved design,
+        // instead of one long line on a wide screen.
+        max-width: 15rem;
         margin-bottom: 0;
     }
 }
