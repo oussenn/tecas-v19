@@ -12,6 +12,20 @@
     --tecas-ink: #1B2A4A;
 }
 
+// Body copy reads as black across the whole frontend. Bootstrap's .text-muted
+// is rgba(33, 37, 41, .7) — a 70% wash that Odoo's own snippets, the shop and
+// the product pages all use for their descriptions, and which is the reason
+// running text looked faint everywhere and not just in one block. Sizes are
+// left alone: the theme already sets 20px body text, so the problem was
+// contrast, never scale. Needs !important because .text-muted carries one.
+#wrapwrap {
+
+    .text-muted,
+    .text-black-50 {
+        color: var(--tecas-ink) !important;
+    }
+}
+
 .s_tecas_btn_orange {
     background-color: var(--tecas-orange);
     border-color: var(--tecas-orange);
@@ -477,10 +491,13 @@
         margin-bottom: 3rem;
     }
 
-    // Second line of the title, deliberately quieter: one statement, two
-    // weights, rather than a title and a subtitle fighting each other.
+    // Second line of the title. It was set in grey to read as a subtitle; the
+    // client wants every line legible, so it carries the same ink and is held
+    // apart by weight alone. Restore the grey here if the two-tone is ever
+    // wanted back.
     .s_tecas_steps_title_soft {
-        color: #9AA3B2;
+        color: var(--tecas-ink);
+        font-weight: 500;
     }
 
     .s_tecas_steps_list {
@@ -520,7 +537,7 @@
     }
 
     .s_tecas_step_text {
-        color: #6B7789;
+        color: var(--tecas-ink);
         line-height: 1.65;
         margin-bottom: 0;
     }
