@@ -58,7 +58,17 @@
                     <h3 class="s_tecas_footer_title">Liens utiles</h3>
                     <ul class="s_tecas_footer_list">
                         <t t-foreach="site.menu_id.child_id[:6]" t-as="menu">
-                            <li><a t-att-href="menu.url" t-out="menu.name"/></li>
+                            <!-- Odoo rewrites a menu's url to "#" as soon as it
+                                 gains children, which in a footer list is just a
+                                 dead link; send those to their first section
+                                 instead (Nos Produits -> the products dropdown's
+                                 first entry). -->
+                            <li>
+                                <a t-att-href="menu.child_id[:1].url or '/'
+                                               if menu.url in (False, '#')
+                                               else menu.url"
+                                   t-out="menu.name"/>
+                            </li>
                         </t>
                     </ul>
                 </div>
@@ -66,7 +76,10 @@
                 <!-- Products: same ranking as the homepage tiles -->
                 <div class="col-6 col-lg-3">
                     <h3 class="s_tecas_footer_title">Nos produits</h3>
-                    <ul class="s_tecas_footer_list">
+                    <!-- s_tecas_footer_cats cases the CAPS category names down
+                         to a single capital; only this column, so the menu
+                         column keeps whatever spelling the client typed. -->
+                    <ul class="s_tecas_footer_list s_tecas_footer_cats">
                         <t t-foreach="env['product.public.category'].sudo()._tecas_homepage_tiles(6)"
                            t-as="cat">
                             <li>

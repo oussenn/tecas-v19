@@ -461,13 +461,20 @@
 // ------------------------------------------------------------------ footer
 // Deep blue ground, white type, orange only on the icons and on hover — the
 // same two-token scheme as the rest of the module.
-.s_tecas_footer {
+//
+// Prefixed with #wrapwrap on purpose. Odoo's colour-combination system emits
+// `.o_colored_level .o_footer a` (and the same for every heading level), which
+// at 0-0-2-1 outranks a plain `.s_tecas_footer a` and repaints our links and
+// titles in the theme's footer palette — that is what turned the links orange
+// and the column titles navy. The id lifts every rule below out of reach of
+// those, whatever palette the client later picks in the editor.
+#wrapwrap .s_tecas_footer {
     background: var(--tecas-blue);
     color: #fff;
     padding: 4rem 0 0;
 
     a {
-        color: rgba(255, 255, 255, 0.86);
+        color: #fff;
         text-decoration: none;
         transition: color 0.15s ease;
 
@@ -484,7 +491,7 @@
     }
 
     .s_tecas_footer_lead {
-        color: rgba(255, 255, 255, 0.82);
+        color: #fff;
         line-height: 1.7;
         max-width: 24rem;
         margin-bottom: 1.75rem;
@@ -515,6 +522,18 @@
         line-height: 1.4;
     }
 
+    // Category names are stored in caps (PANNEAUX SOLAIRE) because that is how
+    // the catalogue is keyed; the footer is the wrong place to shout them. Cased
+    // here rather than in the template so the records keep their own spelling —
+    // and ::first-letter needs a block box, hence the li and not the a.
+    .s_tecas_footer_cats li {
+        text-transform: lowercase;
+
+        &::first-letter {
+            text-transform: uppercase;
+        }
+    }
+
     // Icon and text share a row, and the text wraps under itself rather than
     // under the icon.
     .s_tecas_footer_contact li {
@@ -522,7 +541,7 @@
         gap: 0.75rem;
         margin-bottom: 1.125rem;
         line-height: 1.55;
-        color: rgba(255, 255, 255, 0.86);
+        color: #fff;
 
         .fa {
             color: var(--tecas-orange);
@@ -536,6 +555,6 @@
         padding: 1.25rem 0;
         border-top: 1px solid rgba(255, 255, 255, 0.16);
         font-size: 0.875rem;
-        color: rgba(255, 255, 255, 0.72);
+        color: #fff;
     }
 }
