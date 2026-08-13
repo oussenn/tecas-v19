@@ -176,13 +176,16 @@
         margin: 0 0 1rem;
     }
 
-    // Icon colours ride the same tokens as the type.
+    // Icon colours ride the same tokens as the type. The client's artwork is
+    // drawn with filled paths, not strokes, so these set `fill` — and because
+    // the exports' own <style> blocks are stripped on the way in, these two
+    // rules are the only thing colouring the icons.
     .s_tecas_ink {
-        stroke: var(--tecas-blue);
+        fill: var(--tecas-ink);
     }
 
     .s_tecas_accent {
-        stroke: var(--tecas-orange);
+        fill: var(--tecas-orange);
     }
 
     .s_tecas_eng_label {
