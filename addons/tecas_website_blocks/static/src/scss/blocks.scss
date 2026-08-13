@@ -457,3 +457,85 @@
         margin-bottom: 0;
     }
 }
+
+// ------------------------------------------------------------------ footer
+// Deep blue ground, white type, orange only on the icons and on hover — the
+// same two-token scheme as the rest of the module.
+.s_tecas_footer {
+    background: var(--tecas-blue);
+    color: #fff;
+    padding: 4rem 0 0;
+
+    a {
+        color: rgba(255, 255, 255, 0.86);
+        text-decoration: none;
+        transition: color 0.15s ease;
+
+        &:hover,
+        &:focus {
+            color: var(--tecas-orange);
+        }
+    }
+
+    .s_tecas_footer_logo {
+        max-height: 58px;
+        width: auto;
+        margin-bottom: 1.5rem;
+    }
+
+    .s_tecas_footer_lead {
+        color: rgba(255, 255, 255, 0.82);
+        line-height: 1.7;
+        max-width: 24rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .s_tecas_footer_social {
+        display: flex;
+        gap: 1rem;
+        font-size: 1.05rem;
+    }
+
+    .s_tecas_footer_title {
+        color: #fff;
+        font-size: 1.0625rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+    }
+
+    .s_tecas_footer_list,
+    .s_tecas_footer_contact {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .s_tecas_footer_list li {
+        margin-bottom: 0.75rem;
+        line-height: 1.4;
+    }
+
+    // Icon and text share a row, and the text wraps under itself rather than
+    // under the icon.
+    .s_tecas_footer_contact li {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 1.125rem;
+        line-height: 1.55;
+        color: rgba(255, 255, 255, 0.86);
+
+        .fa {
+            color: var(--tecas-orange);
+            margin-top: 0.25rem;
+            flex: 0 0 1rem;
+        }
+    }
+
+    .s_tecas_footer_bar {
+        margin-top: 3.5rem;
+        padding: 1.25rem 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.16);
+        font-size: 0.875rem;
+        color: rgba(255, 255, 255, 0.72);
+    }
+}

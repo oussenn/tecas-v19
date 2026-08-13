@@ -15,6 +15,7 @@ menu. Neither changes colours or structure.
     'data': [
         'views/snippets/s_tecas_hero.xml',
         'views/snippets/s_tecas_engagements.xml',
+        'views/snippets/s_tecas_footer.xml',
         'views/snippets/s_tecas_section_head.xml',
         'views/snippets/s_tecas_categories.xml',
         'views/snippets/s_tecas_kits.xml',

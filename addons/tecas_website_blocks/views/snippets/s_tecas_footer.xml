@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!--
+    Site footer: brand, useful links, product categories, contact, then a thin
+    bottom bar.
+
+    Everything variable is read from records rather than typed in, so the footer
+    cannot drift from the truth: the links come from the website menu, the
+    categories from the same ranking that drives the homepage tiles, and the
+    address, phones and email from the company record. Edit those and the
+    footer follows.
+
+    Like the other blocks in this module, this is RENDERED and the html stored
+    into the footer's oe_structure — QWeb must never land in an editable zone
+    (see the comment in s_tecas_categories.xml). models/tecas_autosync.py
+    re-renders it when categories or product publication change.
+-->
+<template id="s_tecas_footer" name="Pied de page TECAS">
+    <section class="s_tecas_footer" data-tecas-auto-footer="1">
+        <!-- `website` is only bound during a frontend request, so the block would be
+             impossible to render (or refresh) anywhere else; resolve it from env,
+             as s_tecas_categories.xml does. -->
+        <t t-set="site" t-value="env['website'].sudo().get_current_website()"/>
+        <div class="container">
+            <div class="row gy-5">
+
+                <!-- Brand -->
+                <div class="col-12 col-lg-4 pe-lg-5">
+                    <img t-attf-src="/web/image/website/#{site.id}/logo"
+                         alt="TECAS Énergie Solaire" class="s_tecas_footer_logo"/>
+                    <p class="s_tecas_footer_lead">
+                        Achetez vos équipements solaires en ligne ou profitez d’une
+                        installation clé-en-main par nos experts.
+                    </p>
+                    <div class="s_tecas_footer_social">
+                        <a t-if="site.social_facebook" t-att-href="site.social_facebook"
+                           aria-label="Facebook" target="_blank" rel="noopener">
+                            <i class="fa fa-facebook"/>
+                        </a>
+                        <a t-if="site.social_instagram" t-att-href="site.social_instagram"
+                           aria-label="Instagram" target="_blank" rel="noopener">
+                            <i class="fa fa-instagram"/>
+                        </a>
+                        <a t-if="site.social_youtube" t-att-href="site.social_youtube"
+                           aria-label="YouTube" target="_blank" rel="noopener">
+                            <i class="fa fa-youtube-play"/>
+                        </a>
+                        <a t-if="site.social_linkedin" t-att-href="site.social_linkedin"
+                           aria-label="LinkedIn" target="_blank" rel="noopener">
+                            <i class="fa fa-linkedin"/>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Useful links: the site's own top-level menu -->
+                <div class="col-6 col-lg-2">
+                    <h3 class="s_tecas_footer_title">Liens utiles</h3>
+                    <ul class="s_tecas_footer_list">
+                        <t t-foreach="site.menu_id.child_id[:6]" t-as="menu">
+                            <li><a t-att-href="menu.url" t-out="menu.name"/></li>
+                        </t>
+                    </ul>
+                </div>
+
+                <!-- Products: same ranking as the homepage tiles -->
+                <div class="col-6 col-lg-3">
+                    <h3 class="s_tecas_footer_title">Nos produits</h3>
+                    <ul class="s_tecas_footer_list">
+                        <t t-foreach="env['product.public.category'].sudo()._tecas_homepage_tiles(6)"
+                           t-as="cat">
+                            <li>
+                                <a t-attf-href="/shop/category/#{cat.id}" t-out="cat.name"/>
+                            </li>
+                        </t>
+                        <li><a href="/shop">Tous les produits</a></li>
+                    </ul>
+                </div>
+
+                <!-- Contact, straight off the company record -->
+                <div class="col-12 col-lg-3">
+                    <t t-set="company" t-value="site.company_id.sudo()"/>
+                    <ul class="s_tecas_footer_contact">
+                        <li>
+                            <i class="fa fa-map-marker"/>
+                            <span>
+                                <strong t-out="company.name"/><br/>
+                                <t t-out="company.street"/>
+                                <t t-if="company.street2"><br/><t t-out="company.street2"/></t>
+                                <br/>
+                                <t t-out="company.city"/>
+                                <t t-if="company.country_id"> <t t-out="company.country_id.name"/></t>
+                            </span>
+                        </li>
+                        <!-- v19 dropped `mobile` from res.partner; the company
+                             carries a single phone. -->
+                        <li t-if="company.phone">
+                            <i class="fa fa-phone"/>
+                            <span>
+                                <a t-attf-href="tel:#{company.phone}" t-out="company.phone"/>
+                            </span>
+                        </li>
+                        <li t-if="company.email">
+                            <i class="fa fa-envelope"/>
+                            <span>
+                                <a t-attf-href="mailto:#{company.email}" t-out="company.email"/>
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="s_tecas_footer_bar">
+            <div class="container">
+                <span>©
+                    <t t-out="datetime.date.today().year"/>
+                    <t t-out="site.company_id.name"/>. Tous droits réservés.
+                </span>
+            </div>
+        </div>
+    </section>
+</template>
+
+</odoo>
