@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 530" role="img"
+     aria-label="Emplacement de la photo d'installation">
+    <!-- Placeholder drawn in the shape of the composite photo: one file, big
+         frame with the second view inset bottom-right. Replace the whole image
+         from the editor; nothing here is layout, so the swap is exact. -->
+    <rect width="600" height="530" fill="#FFFFFF"/>
+    <rect x="2" y="2" width="516" height="446" rx="16" fill="#EEF2FE" stroke="#C6D2F2" stroke-width="2"/>
+    <g fill="none" stroke="#8FA6E8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M150 300 h180 l40 90 H110 Z"/>
+        <path d="M170 345 h170 M240 300 v90"/>
+    </g>
+    <g fill="none" stroke="#F5A31E" stroke-width="6" stroke-linecap="round">
+        <circle cx="370" cy="150" r="34"/>
+        <path d="M370 90 v18 M370 192 v18 M310 150 h18 M412 150 h18
+                 M328 108 l13 13 M399 179 l13 13 M412 108 l-13 13 M341 179 l-13 13"/>
+    </g>
+    <rect x="330" y="322" width="268" height="206" rx="16"
+          fill="#E4EBFB" stroke="#FFFFFF" stroke-width="10"/>
+    <g fill="none" stroke="#8FA6E8" stroke-width="5" stroke-linecap="round">
+        <path d="M372 452 h184 M392 424 h144 M412 396 h104"/>
+    </g>
+    <text x="259" y="418" text-anchor="middle" font-family="Inter, Arial, sans-serif"
+          font-size="26" fill="#8FA6E8">Photo à remplacer</text>
+</svg>

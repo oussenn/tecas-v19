@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!--
+    "Installation en 3 étapes simples": the numbered path from a first call to a
+    working roof, next to a photo, closed by the two ways a visitor can actually
+    reach TECAS. It is the conversion block, so both CTAs are real links: the
+    quote form the site already publishes, and the same WhatsApp number the
+    header uses — one number for the whole site, never a second one typed in
+    here.
+
+    The photo is a SINGLE image that already carries the inset-second-photo
+    effect; the markup deliberately does not stack two <img> tags, so swapping
+    the file in the editor swaps the whole composition. Until the real file is
+    dropped in, it points at a placeholder drawn in the shape of that
+    composition, so the section reads correctly and nothing looks broken.
+-->
+<template id="s_tecas_steps" name="Installation en 3 étapes">
+    <section class="s_tecas_steps pt64 pb64">
+        <div class="container">
+            <h2 class="s_tecas_steps_title">
+                Installation de panneaux solaires<br/>
+                <span class="s_tecas_steps_title_soft">en 3 étapes simples</span>
+            </h2>
+
+            <div class="row align-items-center gy-5">
+                <div class="col-12 col-lg-6">
+                    <ol class="s_tecas_steps_list">
+                        <li>
+                            <span class="s_tecas_step_num">1</span>
+                            <div class="s_tecas_step_body">
+                                <h3 class="s_tecas_step_title">Étude gratuite et analyse de vos besoins</h3>
+                                <p class="s_tecas_step_text">
+                                    Nous analysons votre consommation électrique, votre emplacement
+                                    et votre toiture afin de concevoir une solution parfaitement
+                                    adaptée. Cette étape permet de définir la puissance idéale de
+                                    votre installation de panneaux solaires.
+                                </p>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="s_tecas_step_num">2</span>
+                            <div class="s_tecas_step_body">
+                                <h3 class="s_tecas_step_title">Proposition personnalisée et devis clair</h3>
+                                <p class="s_tecas_step_text">
+                                    Nous vous proposons une offre détaillée avec un devis transparent
+                                    incluant les équipements, l'installation et les performances
+                                    attendues. Vous bénéficiez de conseils personnalisés pour
+                                    optimiser votre investissement.
+                                </p>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="s_tecas_step_num">3</span>
+                            <div class="s_tecas_step_body">
+                                <h3 class="s_tecas_step_title">Installation rapide et mise en service</h3>
+                                <p class="s_tecas_step_text">
+                                    Nos installateurs de panneaux solaires réalisent l'installation
+                                    dans le respect des normes de qualité et de sécurité. Une fois le
+                                    système installé, nous assurons la mise en service et vous
+                                    accompagnons dans la prise en main.
+                                </p>
+                            </div>
+                        </li>
+                    </ol>
+
+                    <div class="s_tecas_steps_cta">
+                        <a href="/demande-devis" class="s_tecas_steps_btn s_tecas_steps_btn_quote">
+                            Demander un devis gratuit
+                        </a>
+                        <a href="https://api.whatsapp.com/send/?phone=212664276055&amp;text&amp;type=phone_number&amp;app_absent=0"
+                           class="s_tecas_steps_btn s_tecas_steps_btn_wa"
+                           target="_blank" rel="noopener">
+                            <i class="fa fa-whatsapp"/>WhatsApp
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-12 col-lg-6">
+                    <img src="/tecas_website_blocks/static/src/img/s_tecas_steps_photo.svg"
+                         class="s_tecas_steps_img img-fluid"
+                         alt="Installation de panneaux solaires par les équipes TECAS"
+                         loading="lazy"/>
+                </div>
+            </div>
+        </div>
+    </section>
+</template>
+
+</odoo>

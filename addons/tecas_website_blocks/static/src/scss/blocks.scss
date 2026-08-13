@@ -458,6 +458,133 @@
     }
 }
 
+// ----------------------------------------------------------- three steps
+// A numbered path on the left, the photo on the right. The numerals are the
+// only ornament: outlined circles, orange type, sized so the column of three
+// reads as a sequence before a word of it is read.
+//
+// #wrapwrap-prefixed for the same reason as the footer below: the theme's
+// colour-combination rules (`.o_colored_level .o_ccN h3`, `... a`) outrank a
+// bare block selector and would repaint the step titles and the two buttons
+// whenever the client changes the section's palette in the editor.
+#wrapwrap .s_tecas_steps {
+
+    .s_tecas_steps_title {
+        font-size: clamp(1.9rem, 3.4vw, 2.9rem);
+        font-weight: 700;
+        line-height: 1.2;
+        color: var(--tecas-ink);
+        margin-bottom: 3rem;
+    }
+
+    // Second line of the title, deliberately quieter: one statement, two
+    // weights, rather than a title and a subtitle fighting each other.
+    .s_tecas_steps_title_soft {
+        color: #9AA3B2;
+    }
+
+    .s_tecas_steps_list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 2.5rem;
+
+        li {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+    }
+
+    .s_tecas_step_num {
+        flex: 0 0 3rem;
+        height: 3rem;
+        border: 1px solid #D7DEEA;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--tecas-orange);
+    }
+
+    .s_tecas_step_title {
+        font-size: 1.0625rem;
+        font-weight: 600;
+        color: var(--tecas-ink);
+        margin-bottom: 0.5rem;
+    }
+
+    .s_tecas_step_text {
+        color: #6B7789;
+        line-height: 1.65;
+        margin-bottom: 0;
+    }
+
+    .s_tecas_steps_cta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    // Written out rather than reusing .btn: Bootstrap's button classes are
+    // repainted by whichever palette the client picks in the editor, and these
+    // two colours are the point — TECAS orange, WhatsApp green.
+    .s_tecas_steps_btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.85rem 1.5rem;
+        border-radius: 4px;
+        font-size: 0.8125rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        text-decoration: none;
+        color: #fff;
+        transition: background-color 0.15s ease;
+
+        &:hover,
+        &:focus {
+            color: #fff;
+        }
+
+        .fa {
+            font-size: 1rem;
+        }
+    }
+
+    .s_tecas_steps_btn_quote {
+        background: var(--tecas-orange);
+
+        &:hover,
+        &:focus {
+            background: color-mix(in srgb, var(--tecas-orange) 88%, #000);
+        }
+    }
+
+    .s_tecas_steps_btn_wa {
+        background: #25D366;
+
+        &:hover,
+        &:focus {
+            background: color-mix(in srgb, #25D366 88%, #000);
+        }
+    }
+
+    // One file that already carries the inset-second-photo effect, so the only
+    // job here is the rounded corner and the full width of its column.
+    .s_tecas_steps_img {
+        width: 100%;
+        height: auto;
+        border-radius: 14px;
+    }
+}
+
 // ------------------------------------------------------------------ footer
 // Deep blue ground, white type, orange only on the icons and on hover — the
 // same two-token scheme as the rest of the module.
