@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!--
+    "Nos Actualités": the three latest published blog posts.
+
+    Read live from blog.post at the moment the block is DROPPED, exactly like
+    the category tiles — dragging a snippet inserts the rendered html, so the
+    page stores plain cards and the client can edit them like any other block.
+    models/tecas_autosync.py re-renders every copy marked data-tecas-auto="1"
+    whenever a post is written, published or removed, so the homepage follows
+    the blog without anyone touching the page.
+
+    NEVER copy this template's source into a page arch: a t-* attribute under
+    #wrap costs the page every editor drop zone. See s_tecas_categories.xml.
+
+    Pictures come from _tecas_cover_url() — the post's cover if it has one,
+    otherwise the first image in its body. Posts with neither get the block's
+    own placeholder rather than website_blog's stock cover_5.jpg, which is a
+    photo of somebody else's product. Setting a cover on the post (Blog → the
+    post → Modifier → Couverture) is what puts a real picture here.
+
+    Titles are printed with t-out, not t-field: they must not become editable
+    in the page editor, or editing the page would rewrite the posts themselves.
+-->
+<template id="s_tecas_news" name="Nos actualités">
+    <section class="s_tecas_news pt64 pb64" data-tecas-auto="1">
+        <div class="container">
+            <h2 class="s_tecas_lead_title text-center">Nos Actualités</h2>
+
+            <t t-set="tecas_posts" t-value="env['blog.post'].sudo()._tecas_latest_posts(3)"/>
+            <div class="row g-4">
+                <div t-foreach="tecas_posts" t-as="post" class="col-12 col-md-6 col-lg-4">
+                    <a t-att-href="post.website_url" class="s_tecas_news_card">
+                        <span class="s_tecas_news_img">
+                            <t t-set="cover" t-value="post._tecas_cover_url()"/>
+                            <img t-att-src="cover or '/tecas_website_blocks/static/src/img/s_tecas_news_photo.svg'"
+                                 t-att-alt="post.name" loading="lazy"/>
+                        </span>
+                        <span class="s_tecas_news_body">
+                            <span class="s_tecas_news_title" t-out="post.name"/>
+                            <span class="s_tecas_news_link">Continuer la lecture</span>
+                        </span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="s_tecas_cta s_tecas_cta_center">
+                <a href="/blog" class="s_tecas_cta_btn s_tecas_cta_btn_quote">
+                    Voir toutes les actualités
+                </a>
+            </div>
+        </div>
+    </section>
+</template>
+
+</odoo>

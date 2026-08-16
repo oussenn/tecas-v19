@@ -1,0 +1,78 @@
+// Shop refinements.
+//
+// Like header.scss this touches an existing part of the site rather than a
+// dropped block, and is kept in its own file so that stays obvious. Nothing
+// here changes colours or markup — only the size of one core element.
+
+// ------------------------------------------- sub-category strip (filmstrip)
+//
+// v19 lists a category's children as a "filmstrip" above the products
+// (#o_wsale_categories_filmstrip, "grid" variant). Its defaults are built for
+// four big photo cards: 18rem-wide items in a 4/3 box with h5 labels. On a
+// site whose base font is 20px that is a 270px-tall band, and any family with
+// more than four children (Accessoires has six) runs off the side into a
+// horizontal scroll.
+//
+// Everything in the variant is driven by custom properties, so the whole
+// resize is done by redefining them — no core selector is overridden except
+// to let the items share the row.
+.o_wsale_filmstrip_container.o_wsale_filmstrip_grid {
+    --o-wsale-filmstrip-item-font-size: 0.75rem;
+    --o-wsale-filmstrip-item-image-width: 4.5rem;
+    --o-wsale-filmstrip-item-gap: 0.5rem;
+    --o-wsale-filmstrip-item-padding-y: 0.85rem;
+    --o-wsale-filmstrip-item-padding-x: 0.6rem;
+    // The 4/3 box is what makes the band tall: without it the item is only as
+    // high as the thumbnail plus its label.
+    --o-wsale-filmstrip-item-aspect-ratio: auto;
+    --o-wsale-filmstrip-item-width: auto;
+
+    // Core clips the name to one line with an ellipsis, which at this size
+    // turns "Coffret de Protections AC/DC" into "Coffret ...". The label is
+    // small enough to wrap instead, so every name is readable in full.
+    --o-wsale-filmstrip-item-span-white-space: normal;
+    --o-wsale-filmstrip-item-span-overflow: visible;
+    --o-wsale-filmstrip-item-span-text-overflow: clip;
+
+    .o_wsale_filmstrip {
+        // Core sizes the strip to its content (width: max-content) and lets
+        // the wrapper scroll sideways. Filling the row and wrapping instead
+        // keeps every category reachable without a scroll: a category page
+        // with four children gets one row of wide tiles, while /shop with
+        // fourteen families breaks into two rows rather than fourteen
+        // unreadable slivers.
+        width: 100%;
+        flex-wrap: wrap;
+
+        > li {
+            // The floor is what stops a long list from squeezing the tiles;
+            // below it they wrap. Above it they share the row equally.
+            flex: 1 1 11rem;
+            min-width: 11rem;
+        }
+    }
+
+    .o_wsale_filmstrip_item span {
+        line-height: 1.25;
+    }
+}
+
+// On a phone a wrapped grid of 11rem tiles would push the products far below
+// the fold, so the strip goes back to fixed-width items that scroll sideways,
+// as core intends.
+@media (max-width: 767.98px) {
+    .o_wsale_filmstrip_container.o_wsale_filmstrip_grid {
+        --o-wsale-filmstrip-item-image-width: 3.25rem;
+
+        .o_wsale_filmstrip {
+            width: max-content;
+            flex-wrap: nowrap;
+
+            > li {
+                flex: 0 0 auto;
+                width: 8.5rem;
+                min-width: 0;
+            }
+        }
+    }
+}

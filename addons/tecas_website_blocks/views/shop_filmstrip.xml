@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!--
+    Drop the sub-category strip once there is nothing left to drill into.
+
+    Core builds the strip from the browsed category's children, and when it has
+    none it falls back to the category's SIBLINGS (see the shop() controller:
+    "if not category_entries: ... parent.child_id"). On a leaf like
+    Panneaux Solaire / Jinko that turns the strip into a row where the current
+    page is one of the entries — the category is offering to navigate to
+    itself. The breadcrumb and the products menu already cover moving back up
+    or sideways, so the strip goes away instead.
+
+    Two cases are hidden, and only these two:
+      * the entries contain the browsed category — the siblings fallback;
+      * there are no entries at all — an empty bordered box, which is what a
+        family whose children hold nothing published renders today.
+    A category with real children (Panneaux Solaire, Pompes) is untouched.
+-->
+<template id="filmstrip_hide_without_children" inherit_id="website_sale.filmstrip_categories"
+          name="Masquer le fil des catégories sur une feuille">
+    <xpath expr="//div[@id='o_wsale_categories_filmstrip']" position="attributes">
+        <attribute name="t-if">entries and (not category or category.id not in entries.ids)</attribute>
+    </xpath>
+</template>
+
+</odoo>

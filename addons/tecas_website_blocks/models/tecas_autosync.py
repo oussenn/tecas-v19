@@ -6,11 +6,21 @@ from odoo import api, models
 
 _logger = logging.getLogger(__name__)
 
-CATEGORIES_SNIPPET = 'tecas_website_blocks.s_tecas_categories'
+# Blocks that re-render themselves from live data: {section class: template}.
+# A dropped copy keeps its markup frozen until one of these runs, which is why
+# every block listed here must also carry data-tecas-auto="1" in its template.
+AUTO_BLOCKS = {
+    's_tecas_categories': 'tecas_website_blocks.s_tecas_categories',
+    's_tecas_news': 'tecas_website_blocks.s_tecas_news',
+}
+PRODUCTS_MENU_TEMPLATE = 'tecas_website_blocks.s_tecas_products_menu'
 AUTO_FLAG = 'data-tecas-auto'
 PRODUCTS_MENU_URL = '/shop'
 PRODUCTS_MENU_PARAM = 'tecas.products_menu_id'
 SHOP_LABEL = 'Toute la boutique'
+# Odoo's own "narrow" mega-menu width: the panel lines up with the page
+# container instead of spanning the full window.
+MEGA_MENU_CLASSES = 'o_mega_menu_container_size'
 
 # A page arch must never contain QWeb: ir_ui_view.distribute_branding() strips a
 # node's editor branding as soon as a descendant carries a t-* attribute, which
@@ -21,123 +31,185 @@ SHOP_LABEL = 'Toute la boutique'
 # page editor.
 
 
-def _relevant_categories(env):
-    """Top-level public categories that hold at least one published product.
+def _installed_langs(env):
+    """Codes of the languages actually installed on the site.
 
-    Categories with nothing published make /shop/category/<id> return 404, so
-    they must not produce a tile or a menu entry.
+    active_test is forced back on: this runs from whatever context triggered
+    the write, and a caller that searched with active_test=False (a data
+    script, an import) would otherwise hand back all ~80 res.lang rows. Odoo
+    then refuses the first uninstalled one with "Invalid language code" and the
+    whole refresh is lost.
+    """
+    codes = env['res.lang'].sudo().with_context(active_test=True).search([]).mapped('code')
+    return codes or ['en_US']
+
+
+def _is_browsable(env, categ):
+    """True when a visitor can open this category's page.
+
+    Two ways in: something published sits underneath it, or it carries the
+    tecas_show_when_empty flag. tecas_hide_from_website closes both — see
+    product_public_category._search_has_published_products, which applies the
+    same two flags to the shop itself.
+    """
+    if categ.tecas_hide_from_website:
+        return False
+    if categ.tecas_show_when_empty:
+        return True
+    return bool(env['product.template'].sudo().search_count(
+        [('public_categ_ids', 'child_of', categ.id), ('is_published', '=', True)], limit=1))
+
+
+def _relevant_categories(env, include_empty=False):
+    """Top-level public categories a visitor can actually browse.
+
+    include_empty stays off for the homepage tiles: a tile needs a product
+    image to show at all, so an announced-but-empty family belongs in the menu
+    and nowhere else.
     """
     categories = env['product.public.category'].sudo().search(
         [('parent_id', '=', False)], order='sequence, name')
-    Template = env['product.template'].sudo()
-    return categories.filtered(lambda c: Template.search_count(
-        [('public_categ_ids', 'child_of', c.id), ('is_published', '=', True)], limit=1))
+    if include_empty:
+        return categories.filtered(lambda c: _is_browsable(env, c))
+    return categories.filtered(lambda c: not c.tecas_show_when_empty and _is_browsable(env, c))
 
 
-def _refresh_category_tiles(env):
-    """Re-render the tiles into every PAGE that opted in with the auto flag.
+def _refresh_auto_blocks(env):
+    """Re-render every self-updating block into the PAGES that opted in.
 
     Restricted to views backing a website.page on purpose. Searching all qweb
-    views also matches this module's own snippet template, and rewriting that
+    views also matches this module's own snippet templates, and rewriting one
     replaces its t-foreach with frozen html — which silently kills the block's
     dynamism for every future drop. Only pages are ever rewritten.
     """
     page_view_ids = env['website.page'].sudo().search([]).view_id.ids
     if not page_view_ids:
         return 0
-    views = env['ir.ui.view'].sudo().search(
-        [('id', 'in', page_view_ids), ('arch_db', 'like', 's_tecas_categories')])
-    if not views:
+
+    sources = {}
+    for section_class, template in AUTO_BLOCKS.items():
+        rendered = env['ir.qweb'].sudo()._render(template)
+        source = etree.fromstring(('<root>%s</root>' % rendered).encode('utf-8')).find('section')
+        if source is None:
+            _logger.warning('tecas: %s rendered no <section>, skipping it', template)
+            continue
+        sources[section_class] = source
+    if not sources:
         return 0
 
-    rendered = env['ir.qweb'].sudo()._render(CATEGORIES_SNIPPET)
-    source = etree.fromstring(('<root>%s</root>' % rendered).encode('utf-8')).find('section')
-    if source is None:
-        _logger.warning('tecas: categories snippet rendered no <section>, skipping refresh')
-        return 0
-
+    views = env['ir.ui.view'].sudo().search([('id', 'in', page_view_ids)])
     touched = 0
     for view in views:
         arch = view.arch_db
         if AUTO_FLAG not in arch:
             continue                        # hand-edited copy: leave it alone
         root = etree.fromstring(arch.encode('utf-8'))
-        targets = root.xpath(
-            "//section[contains(@class,'s_tecas_categories')][@%s='1']" % AUTO_FLAG)
-        if not targets:
+        replaced = False
+        for section_class, source in sources.items():
+            targets = root.xpath(
+                "//section[contains(@class,'%s')][@%s='1']" % (section_class, AUTO_FLAG))
+            for old in targets:
+                new = etree.fromstring(etree.tostring(source))
+                # Preserve whatever the editor put on the node (data-snippet,
+                # data-name, and any class the client added from the builder).
+                for attr, value in old.attrib.items():
+                    if attr != 'class':
+                        new.set(attr, value)
+                new.tail = old.tail
+                old.getparent().replace(old, new)
+                replaced = True
+        if not replaced:
             continue
-
-        for old in targets:
-            new = etree.fromstring(etree.tostring(source))
-            # Preserve whatever the editor put on the node (data-snippet,
-            # data-name, and any class the client added from the builder).
-            for attr, value in old.attrib.items():
-                if attr != 'class':
-                    new.set(attr, value)
-            new.tail = old.tail
-            old.getparent().replace(old, new)
 
         new_arch = etree.tostring(root, encoding='unicode')
         if new_arch != arch:
-            for lang in {'en_US', env.lang or 'en_US'} | set(
-                    env['res.lang'].sudo().search([]).mapped('code')):
+            for lang in set(_installed_langs(env)):
                 view.with_context(lang=lang).write({'arch_db': new_arch})
             touched += 1
 
     return touched
 
 
-def _sync_products_menu(env):
-    """Keep the products dropdown in step with the categories.
+def _menu_groups(env):
+    """The two levels behind "Nos Produits", as plain values for the template.
 
-    The parent is named explicitly by the ir.config_parameter
+    A family is a top-level category, a sub-family one of its children, and
+    both are dropped unless a visitor can open them — the menu must never offer
+    a category page that 404s. An empty family flagged tecas_show_when_empty
+    counts as openable, which is how the pumps are announced ahead of their
+    products.
+    """
+    slug = env['ir.http']._slug
+
+    def browsable(categ):
+        return _is_browsable(env, categ)
+
+    groups = []
+    for root in _relevant_categories(env, include_empty=True):
+        children = root.child_id.sorted(lambda c: (c.sequence, c.name or ''))
+        groups.append({
+            'name': (root.name or '').strip(),
+            'url': '/shop/category/%s' % slug(root),
+            'children': [{'name': (c.name or '').strip(),
+                          'url': '/shop/category/%s' % slug(c)}
+                         for c in children if browsable(c)],
+        })
+    return groups
+
+
+def _sync_products_menu(env):
+    """Keep the products mega menu in step with the categories.
+
+    The menu is named explicitly by the ir.config_parameter
     tecas.products_menu_id, never found by url. Odoo rewrites a menu's url to
-    "#" the moment it gains children, so a url lookup works once and then
-    silently matches the wrong records — which is how an earlier version of
-    this filled the unused default menu tree with duplicates.
+    "#" the moment it gains children (or becomes a mega menu), so a url lookup
+    works once and then silently matches the wrong records — which is how an
+    earlier version of this filled the unused default menu tree with
+    duplicates.
+
+    The panel replaces the flat list of child menu items that used to hang off
+    "Nos Produits": v19 allows only two levels of website.menu, and a mega menu
+    may not have children at all, so the old entries have to go for the
+    families-and-sub-families layout to exist. They carry nothing that is not
+    regenerated here.
     """
     menu_id = env['ir.config_parameter'].sudo().get_param(PRODUCTS_MENU_PARAM)
     if not menu_id:
         return 0
-    parent = env['website.menu'].sudo().browse(int(menu_id)).exists()
-    if not parent:
+    menu = env['website.menu'].sudo().browse(int(menu_id)).exists()
+    if not menu:
         _logger.warning('tecas: %s points at a menu that no longer exists', PRODUCTS_MENU_PARAM)
         return 0
 
-    Menu = env['website.menu'].sudo()
-    slug = env['ir.http']._slug
-    wanted = [(c.name.strip(), '/shop/category/%s' % slug(c))
-              for c in _relevant_categories(env)]
-    wanted.append((SHOP_LABEL, PRODUCTS_MENU_URL))
-
-    # Only entries this module owns are ever rewritten or removed; anything the
-    # client adds to the dropdown by hand is left exactly where it is.
-    children = Menu.search([('parent_id', '=', parent.id)])
-    owned = children.filtered(
-        lambda m: m.url and (m.url.startswith('/shop/category/') or m.url == PRODUCTS_MENU_URL))
-    by_url = {m.url: m for m in owned}
+    # Hand-edited panel: the editor rewrites the section and the marker goes
+    # with it. Never overwrite the client's own work.
+    if menu.mega_menu_content and AUTO_FLAG not in menu.mega_menu_content:
+        return 0
 
     touched = 0
-    sequence = 10
-    for name, url in wanted:
-        existing = by_url.pop(url, None)
-        if existing:
-            if existing.name != name or existing.sequence != sequence:
-                existing.write({'name': name, 'sequence': sequence})
-                touched += 1
-        else:
-            Menu.create({
-                'name': name,
-                'url': url,
-                'parent_id': parent.id,
-                'sequence': sequence,
-                'website_id': parent.website_id.id,
-            })
-            touched += 1
-        sequence += 10
+    if menu.child_id:
+        # website.menu._validate_parent_menu() rejects a mega menu that has
+        # children, so this has to happen before the content is written.
+        menu.child_id.unlink()
+        touched += 1
 
-    for stale in by_url.values():
-        stale.unlink()
+    # One render per language: the panel is mostly markup, but the family names
+    # inside it are translatable, and mega_menu_content is a translated field.
+    # Writing a single render would stamp one language over all of them.
+    for lang in _installed_langs(env):
+        env_lang = env(context=dict(env.context, lang=lang))
+        content = str(env_lang['ir.qweb']._render(PRODUCTS_MENU_TEMPLATE, {
+            'groups': _menu_groups(env_lang),
+            'shop_url': PRODUCTS_MENU_URL,
+            'shop_label': SHOP_LABEL,
+        })).strip()
+        menu_lang = menu.with_context(lang=lang)
+        if (menu_lang.mega_menu_content or '').strip() != content:
+            menu_lang.write({'mega_menu_content': content})
+            touched += 1
+
+    if menu.mega_menu_classes != MEGA_MENU_CLASSES:
+        menu.write({'mega_menu_classes': MEGA_MENU_CLASSES})
         touched += 1
 
     return touched
@@ -146,7 +218,19 @@ def _sync_products_menu(env):
 def _run(env):
     """Never let a website refresh break the business write that triggered it."""
     try:
-        tiles = _refresh_category_tiles(env)
+        # This runs from whatever context triggered the write, and that context
+        # must not decide what the website shows. A caller searching with
+        # active_test=False (a data script, an import) otherwise leaks it here,
+        # and archived products still carrying is_published=True then make an
+        # empty category look full — it lands in the menu with links that 404,
+        # because the shop itself only ever counts active products. Hit twice
+        # on prod 2026-08-16 ("Pompes", then "Parafoudre").
+        env = env(context=dict(env.context, active_test=True))
+        # `child_of` reads parent_path, and a category created in this same
+        # transaction has none until the ORM flushes — an empty prefix matches
+        # every product, with the same visible result.
+        env.flush_all()
+        tiles = _refresh_auto_blocks(env)
         menus = _sync_products_menu(env)
         if tiles or menus:
             _logger.info('tecas autosync: %d page(s) refreshed, %d menu change(s)',
@@ -171,8 +255,21 @@ def _schedule(env):
 class ProductPublicCategory(models.Model):
     _inherit = 'product.public.category'
 
-    # Fields that change what a tile or a menu entry looks like.
-    _TECAS_WATCHED = {'name', 'sequence', 'parent_id', 'image_1920', 'website_id'}
+    # Fields that change what a tile or a menu entry looks like. The
+    # show-while-empty flag belongs here too: it is the only thing that decides
+    # whether an empty family is in the menu at all.
+    _TECAS_WATCHED = {'name', 'sequence', 'parent_id', 'image_1920', 'website_id',
+                      'tecas_show_when_empty', 'tecas_hide_from_website'}
+
+    @api.model
+    def _tecas_refresh_website(self):
+        """Called from views/products_menu.xml on install and on every upgrade.
+
+        Without it a deploy that only changes the panel's markup would leave
+        the stored copy untouched until the next time someone edits a
+        category — the menu would still be the old one after the upgrade.
+        """
+        _run(self.env)
 
     @api.model_create_multi
     def create(self, vals_list):

@@ -1,4 +1,5 @@
-from odoo import api, models
+from odoo import api, fields, models
+from odoo.fields import Domain
 
 from .tecas_autosync import _relevant_categories
 
@@ -10,6 +11,47 @@ PINNED_PREFIXES = ('PANNEAU', 'ONDULEUR')
 
 class ProductPublicCategory(models.Model):
     _inherit = 'product.public.category'
+
+    tecas_show_when_empty = fields.Boolean(
+        string="Afficher même sans produit publié",
+        help="Garde la catégorie dans le menu et rend sa page accessible aux "
+             "visiteurs tant qu'aucun produit n'y est publié. À cocher pour "
+             "une famille annoncée avant d'être en ligne (les pompes), à "
+             "laisser décochée partout ailleurs.",
+        default=False,
+    )
+    tecas_hide_from_website = fields.Boolean(
+        string="Masquer du site",
+        help="Retire la catégorie du site — menu, page d'accueil, colonne de "
+             "gauche de la boutique — sans rien changer au catalogue : la "
+             "catégorie reste utilisable en interne et les produits qu'elle "
+             "contient restent en ligne via leurs autres catégories.",
+        default=False,
+    )
+
+    @api.model
+    def _search_has_published_products(self, operator, value):
+        """Decide, in one place, whether a visitor may see a category.
+
+        `has_published_products` is the single lever the whole shop uses: the
+        record rule website_sale.empty_public_categories_rule (which is why an
+        empty category's page 404s), the sidebar tree, and the sub-category
+        strip on a category page all read it — the strip filters on it inline,
+        so nothing short of this field would reach it. Both TECAS flags are
+        therefore folded in here, and only here:
+
+          * tecas_show_when_empty announces a family before its products are
+            published (the pumps);
+          * tecas_hide_from_website takes a category off the site while leaving
+            the catalogue untouched (Promo), and wins over everything else.
+
+        Core's compute delegates to this method, so the field follows.
+        """
+        domain = super()._search_has_published_products(operator, value)
+        if domain is NotImplemented:
+            return domain
+        return ((domain | Domain('tecas_show_when_empty', '=', True))
+                & Domain('tecas_hide_from_website', '=', False))
 
     @api.model
     def _tecas_homepage_tiles(self, limit=7):

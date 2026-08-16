@@ -46,6 +46,14 @@
                t-thumbnail="/tecas_website_blocks/static/src/img/snippets_thumbs/s_tecas_services.svg">
                 <keywords>services, particuliers, entreprises, agriculture, maintenance</keywords>
             </t>
+            <t t-snippet="tecas_website_blocks.s_tecas_reviews" string="Avis clients" group="tecas"
+               t-thumbnail="/tecas_website_blocks/static/src/img/snippets_thumbs/s_tecas_reviews.svg">
+                <keywords>avis, temoignages, google, etoiles, confiance, clients</keywords>
+            </t>
+            <t t-snippet="tecas_website_blocks.s_tecas_news" string="Nos actualités" group="tecas"
+               t-thumbnail="/tecas_website_blocks/static/src/img/snippets_thumbs/s_tecas_news.svg">
+                <keywords>actualites, blog, articles, news, presse</keywords>
+            </t>
         </xpath>
 
     </template>

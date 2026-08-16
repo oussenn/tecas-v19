@@ -5,13 +5,16 @@
 Mainly building blocks: installing this adds blocks to the website editor and
 changes no existing page until one of them is dropped onto a page.
 
-Two deliberate exceptions, each in its own file so they stay easy to find and
-to drop: views/shop_filters.xml scopes the shop's attribute filters to the
-category being browsed, and static/src/scss/header.scss spaces out the top
-menu. Neither changes colours or structure.
+The deliberate exceptions live one per file so they stay easy to find and to
+drop: views/shop_filters.xml scopes the shop's attribute filters to the
+category being browsed, views/products_menu.xml supplies the panel that
+models/tecas_autosync.py stores in the "Nos Produits" mega menu, the
+tecas_show_when_empty flag on product.public.category lets a family be browsed
+before its products are published, and the two SCSS files dress the top menu
+(header) and shrink the sub-category strip on category pages (shop).
 """,
-    'version': '19.0.10.0.0',
-    'depends': ['website', 'website_sale'],
+    'version': '19.0.18.0.0',
+    'depends': ['website', 'website_sale', 'website_blog'],
     'data': [
         'views/snippets/s_tecas_hero.xml',
         'views/snippets/s_tecas_engagements.xml',
@@ -23,13 +26,18 @@ menu. Neither changes colours or structure.
         'views/snippets/s_tecas_steps.xml',
         'views/snippets/s_tecas_why.xml',
         'views/snippets/s_tecas_services.xml',
+        'views/snippets/s_tecas_reviews.xml',
+        'views/snippets/s_tecas_news.xml',
         'views/snippets/snippets.xml',
+        'views/products_menu.xml',
         'views/shop_filters.xml',
+        'views/shop_filmstrip.xml',
     ],
     'assets': {
         'web.assets_frontend': [
             'tecas_website_blocks/static/src/scss/blocks.scss',
             'tecas_website_blocks/static/src/scss/header.scss',
+            'tecas_website_blocks/static/src/scss/shop.scss',
         ],
     },
     'author': 'TECAS',

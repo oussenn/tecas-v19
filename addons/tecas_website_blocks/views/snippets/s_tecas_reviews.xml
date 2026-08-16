@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!--
+    "Ils nous font confiance": the real Google reviews of the TECAS listing,
+    with a badge linking back to the listing itself.
+
+    THE REVIEWS ARE REAL AND MUST STAY REAL. They are copied from the public
+    Google Maps page of Tecas Energie Solaire (place id 0xda7cbf0955299c5,
+    Casablanca), not written for the site. Two consequences:
+
+    * The wording here is a faithful French rendering of reviews Google served
+      translated into English; each original was written in French ("Voir
+      l'original (français)" on the listing). Anyone editing this block should
+      check a quote against its original before changing it, and never
+      "improve" it — these are quotes from named people.
+    * Only the reviewer's first name is shown, which is what the client asked
+      for. No city is claimed: Google publishes none for these reviewers, and
+      inventing one would attribute a made-up detail to a real person. Add the
+      city to an author line only once someone actually knows it.
+
+    Google's own listing carries the star ratings and the review count, so the
+    block deliberately shows neither an average nor a total it would have to
+    keep in step by hand — the badge sends visitors to the source instead.
+
+    Plain html on purpose (no QWeb): this block is dropped into a page, and a
+    t-* attribute anywhere under #wrap costs the page its editor drop zones.
+    See the comment in s_tecas_categories.xml.
+-->
+<template id="s_tecas_reviews" name="Avis clients">
+    <section class="s_tecas_reviews pt64 pb64">
+        <div class="container">
+            <h2 class="s_tecas_lead_title text-center">Ils nous font confiance</h2>
+
+            <div class="s_tecas_reviews_badge">
+                <a href="https://www.google.com/maps/place/Tecas+Energie+Solaire/@33.6365707,-7.5009827,17z/data=!3m1!4b1!4m6!3m5!1s0xda7cbf0955299c5:0x52157001a0cadb0c!8m2!3d33.6365707!4d-7.5009827!16s%2Fg%2F11fhvkhzhg"
+                   class="s_tecas_reviews_gbtn" target="_blank" rel="noopener">
+                    <span class="s_tecas_reviews_glogo">
+                        <svg viewBox="0 0 48 48" role="img" aria-label="Google">
+                            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                        </svg>
+                    </span>
+                    <span class="s_tecas_reviews_gtext">
+                        <span class="s_tecas_reviews_gtitle">Avis Google</span>
+                        <span class="s_tecas_reviews_gsub">Tecas Energie Solaire, Casablanca</span>
+                    </span>
+                    <span class="s_tecas_reviews_gcta">Voir sur Google Maps</span>
+                </a>
+            </div>
+
+            <div class="row g-4">
+
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="s_tecas_review_card">
+                        <div class="s_tecas_review_stars" aria-label="5 étoiles sur 5">
+                            <i class="fa fa-star"/><i class="fa fa-star"/><i class="fa fa-star"/><i class="fa fa-star"/><i class="fa fa-star"/>
+                        </div>
+                        <p class="s_tecas_review_text">
+                            “Salam, j'ai échangé au téléphone avec Soukaina, de l'équipe
+                            commerciale. Elle m'a aidé à choisir le bon produit, à un prix très
+                            compétitif. Je salue sa patience et son professionnalisme, et je
+                            recommande cette société aux autres clients.”
+                        </p>
+                        <p class="s_tecas_review_author">— Mohamed, avis Google</p>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="s_tecas_review_card">
+                        <div class="s_tecas_review_stars" aria-label="5 étoiles sur 5">
+                            <i class="fa fa-star"/><i class="fa fa-star"/><i class="fa fa-star"/><i class="fa fa-star"/><i class="fa fa-star"/>
+                        </div>
+                        <p class="s_tecas_review_text">
+                            “Bon service, équipe professionnelle.”
+                        </p>
+                        <p class="s_tecas_review_author">— Souad, avis Google</p>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="s_tecas_review_card">
+                        <div class="s_tecas_review_stars" aria-label="5 étoiles sur 5">
+                            <i class="fa fa-star"/><i class="fa fa-star"/><i class="fa fa-star"/><i class="fa fa-star"/><i class="fa fa-star"/>
+                        </div>
+                        <p class="s_tecas_review_text">
+                            “Excellent service, équipe performante.”
+                        </p>
+                        <p class="s_tecas_review_author">— Othmane, avis Google</p>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="s_tecas_review_card">
+                        <div class="s_tecas_review_stars" aria-label="5 étoiles sur 5">
+                            <i class="fa fa-star"/><i class="fa fa-star"/><i class="fa fa-star"/><i class="fa fa-star"/><i class="fa fa-star"/>
+                        </div>
+                        <p class="s_tecas_review_text">
+                            “Bon rapport qualité-prix, des gens sérieux, je les recommande.”
+                        </p>
+                        <p class="s_tecas_review_author">— Youness, avis Google</p>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="s_tecas_review_card">
+                        <div class="s_tecas_review_stars" aria-label="5 étoiles sur 5">
+                            <i class="fa fa-star"/><i class="fa fa-star"/><i class="fa fa-star"/><i class="fa fa-star"/><i class="fa fa-star"/>
+                        </div>
+                        <p class="s_tecas_review_text">
+                            “Très bons services.”
+                        </p>
+                        <p class="s_tecas_review_author">— Badr, avis Google</p>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="s_tecas_review_card">
+                        <div class="s_tecas_review_stars" aria-label="5 étoiles sur 5">
+                            <i class="fa fa-star"/><i class="fa fa-star"/><i class="fa fa-star"/><i class="fa fa-star"/><i class="fa fa-star"/>
+                        </div>
+                        <p class="s_tecas_review_text">
+                            “Installation et mise en service parfaites, une équipe de
+                            professionnels.”
+                        </p>
+                        <p class="s_tecas_review_author">— Youssef, avis Google</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+</template>
+
+</odoo>

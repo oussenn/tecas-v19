@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!--
+    The panel behind "Nos Produits".
+
+    It is a MEGA MENU, not a list of menu items, because v19 forbids the shape
+    the two-level menu needs: website.menu._validate_parent_menu() refuses a
+    menu that has both a parent and children ("Menus with child menus cannot be
+    added as a submenu"), and "Nos Produits" already hangs off the site's root
+    menu. A mega menu is the only place a second level can live — and it also
+    lets a family name link to its own category page, which a parent menu item
+    cannot do (Odoo rewrites its url to "#" the moment it gains children).
+
+    This template is rendered by models/tecas_autosync.py and the RESULT is
+    stored in website.menu.mega_menu_content — the same render-then-store
+    pattern as the homepage tiles, for the same reason: the field holds plain
+    html, so nothing here may depend on a live request. Category urls are built
+    from the slug by the caller and passed in; names come pre-translated
+    because the caller renders once per installed language.
+
+    Only families and sub-families that hold a published product are passed in.
+    /shop/category/<id> answers 404 when nothing under it is published, so
+    rendering the whole tree would fill the menu with dead links — the Pompes
+    branch is exactly that case today. It appears on its own the moment a pump
+    is published.
+
+    data-tecas-auto marks the panel as generated. Edit it in the website editor
+    and the attribute goes away with the change; autosync then leaves the panel
+    alone for good.
+-->
+<template id="s_tecas_products_menu" name="Menu Nos Produits">
+    <section class="s_tecas_products_menu o_colored_level o_cc o_cc1"
+             data-tecas-auto="1" data-name="Nos Produits">
+        <div class="container">
+            <div class="row">
+                <div t-foreach="groups" t-as="group" class="col-6 col-lg-3 s_tecas_pm_col">
+                    <a t-att-href="group['url']" class="s_tecas_pm_title" t-out="group['name']"/>
+                    <nav t-if="group['children']" class="s_tecas_pm_list">
+                        <a t-foreach="group['children']" t-as="child"
+                           t-att-href="child['url']" class="s_tecas_pm_link" t-out="child['name']"/>
+                    </nav>
+                </div>
+            </div>
+            <div class="s_tecas_pm_foot">
+                <a t-att-href="shop_url" class="s_tecas_pm_all">
+                    <span t-out="shop_label"/>
+                    <span class="s_tecas_pm_arrow" aria-hidden="true">→</span>
+                </a>
+            </div>
+        </div>
+    </section>
+</template>
+
+<!-- Rebuild the stored panel whenever the module is installed or upgraded, so
+     a change to the markup above reaches the site with the deploy instead of
+     waiting for the next category edit. The call is exception-guarded inside
+     _run(), so it can never fail an upgrade. -->
+<function model="product.public.category" name="_tecas_refresh_website"/>
+
+</odoo>
