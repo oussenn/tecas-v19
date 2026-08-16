@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!--
+    "Pourquoi installer des panneaux solaires au Maroc ?": the argument, next to
+    proof that TECAS does the work itself. Mirror of s_tecas_steps — photo left,
+    text right — and it shares that block's title and button rules rather than
+    restating them, so the two sections cannot drift apart.
+
+    Same rule as the steps block for the photo: ONE image already carrying its
+    multi-view composition, never a grid of <img> tags, so swapping the file in
+    the editor swaps the whole composition. The placeholder it points at until
+    then is drawn in that shape.
+-->
+<template id="s_tecas_why" name="Pourquoi le solaire">
+    <section class="s_tecas_why pt64 pb64">
+        <div class="container">
+            <div class="row align-items-center gy-5">
+
+                <div class="col-12 col-lg-6">
+                    <img src="/tecas_website_blocks/static/src/img/s_tecas_why_photo.svg"
+                         class="s_tecas_photo img-fluid"
+                         alt="Chantiers d'installation solaire réalisés par TECAS au Maroc"
+                         loading="lazy"/>
+                </div>
+
+                <div class="col-12 col-lg-6 ps-lg-5">
+                    <h2 class="s_tecas_lead_title">
+                        Pourquoi installer des panneaux<br/>
+                        <span class="s_tecas_lead_title_soft">solaires au Maroc ?</span>
+                    </h2>
+
+                    <div class="s_tecas_why_body">
+                        <p class="s_tecas_why_text">
+                            Le Maroc bénéficie d'un des meilleurs taux d'ensoleillement au
+                            monde, ce qui en fait un environnement idéal pour l'installation
+                            de panneaux solaires. En produisant votre propre électricité, vous
+                            réduisez immédiatement vos factures tout en vous protégeant contre
+                            les hausses de prix de l'énergie.
+                        </p>
+                        <p class="s_tecas_why_text">
+                            L'installation de panneaux solaires permet également d'augmenter la
+                            valeur de votre bien immobilier et de gagner en autonomie
+                            énergétique. Que ce soit pour une maison, une entreprise ou une
+                            exploitation agricole, l'énergie solaire représente aujourd'hui une
+                            solution rentable, durable et accessible.
+                        </p>
+                    </div>
+
+                    <div class="s_tecas_cta">
+                        <a href="/demande-devis" class="s_tecas_cta_btn s_tecas_cta_btn_quote">
+                            Demander un devis gratuit
+                        </a>
+                        <a href="https://api.whatsapp.com/send/?phone=212664276055&amp;text&amp;type=phone_number&amp;app_absent=0"
+                           class="s_tecas_cta_btn s_tecas_cta_btn_wa"
+                           target="_blank" rel="noopener">
+                            <i class="fa fa-whatsapp"/>WhatsApp
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+</template>
+
+</odoo>

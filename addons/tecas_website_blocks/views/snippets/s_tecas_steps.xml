@@ -18,9 +18,9 @@
 <template id="s_tecas_steps" name="Installation en 3 étapes">
     <section class="s_tecas_steps pt64 pb64">
         <div class="container">
-            <h2 class="s_tecas_steps_title">
+            <h2 class="s_tecas_lead_title">
                 Installation de panneaux solaires<br/>
-                <span class="s_tecas_steps_title_soft">en 3 étapes simples</span>
+                <span class="s_tecas_lead_title_soft">en 3 étapes simples</span>
             </h2>
 
             <div class="row align-items-center gy-5">
@@ -64,12 +64,12 @@
                         </li>
                     </ol>
 
-                    <div class="s_tecas_steps_cta">
-                        <a href="/demande-devis" class="s_tecas_steps_btn s_tecas_steps_btn_quote">
+                    <div class="s_tecas_cta">
+                        <a href="/demande-devis" class="s_tecas_cta_btn s_tecas_cta_btn_quote">
                             Demander un devis gratuit
                         </a>
                         <a href="https://api.whatsapp.com/send/?phone=212664276055&amp;text&amp;type=phone_number&amp;app_absent=0"
-                           class="s_tecas_steps_btn s_tecas_steps_btn_wa"
+                           class="s_tecas_cta_btn s_tecas_cta_btn_wa"
                            target="_blank" rel="noopener">
                             <i class="fa fa-whatsapp"/>WhatsApp
                         </a>
@@ -78,7 +78,7 @@
 
                 <div class="col-12 col-lg-6">
                     <img src="/tecas_website_blocks/static/src/img/s_tecas_steps_photo.svg"
-                         class="s_tecas_steps_img img-fluid"
+                         class="s_tecas_photo img-fluid"
                          alt="Installation de panneaux solaires par les équipes TECAS"
                          loading="lazy"/>
                 </div>

@@ -38,6 +38,10 @@
                t-thumbnail="/tecas_website_blocks/static/src/img/snippets_thumbs/s_tecas_steps.svg">
                 <keywords>etapes, process, installation, devis, whatsapp, demarche</keywords>
             </t>
+            <t t-snippet="tecas_website_blocks.s_tecas_why" string="Pourquoi le solaire" group="tecas"
+               t-thumbnail="/tecas_website_blocks/static/src/img/snippets_thumbs/s_tecas_why.svg">
+                <keywords>pourquoi, avantages, maroc, ensoleillement, economies, devis</keywords>
+            </t>
         </xpath>
 
     </template>

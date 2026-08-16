@@ -472,32 +472,102 @@
     }
 }
 
-// ----------------------------------------------------------- three steps
-// A numbered path on the left, the photo on the right. The numerals are the
-// only ornament: outlined circles, orange type, sized so the column of three
-// reads as a sequence before a word of it is read.
+// ------------------------------------------- shared lead-in title and CTAs
+// Two blocks (three steps, why solar) open with the same two-line title and
+// close on the same pair of buttons, so both live here once. Anything that
+// belongs to a single block stays in that block's section below.
 //
-// #wrapwrap-prefixed for the same reason as the footer below: the theme's
+// #wrapwrap-prefixed for the same reason as the footer: the theme's
 // colour-combination rules (`.o_colored_level .o_ccN h3`, `... a`) outrank a
-// bare block selector and would repaint the step titles and the two buttons
-// whenever the client changes the section's palette in the editor.
-#wrapwrap .s_tecas_steps {
+// bare block selector and would repaint titles and buttons whenever the client
+// changes a section's palette in the editor.
+#wrapwrap {
 
-    .s_tecas_steps_title {
+    .s_tecas_lead_title {
         font-size: clamp(1.9rem, 3.4vw, 2.9rem);
         font-weight: 700;
         line-height: 1.2;
         color: var(--tecas-ink);
-        margin-bottom: 3rem;
+        margin-bottom: 2rem;
     }
 
     // Second line of the title. It was set in grey to read as a subtitle; the
     // client wants every line legible, so it carries the same ink and is held
     // apart by weight alone. Restore the grey here if the two-tone is ever
     // wanted back.
-    .s_tecas_steps_title_soft {
+    .s_tecas_lead_title_soft {
         color: var(--tecas-ink);
         font-weight: 500;
+    }
+
+    .s_tecas_cta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    // Written out rather than reusing .btn: Bootstrap's button classes are
+    // repainted by whichever palette the client picks in the editor, and these
+    // two colours are the point — TECAS orange, WhatsApp green.
+    .s_tecas_cta_btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.85rem 1.5rem;
+        border-radius: 4px;
+        font-size: 0.8125rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        text-decoration: none;
+        color: #fff;
+        transition: background-color 0.15s ease;
+
+        &:hover,
+        &:focus {
+            color: #fff;
+        }
+
+        .fa {
+            font-size: 1rem;
+        }
+    }
+
+    .s_tecas_cta_btn_quote {
+        background: var(--tecas-orange);
+
+        &:hover,
+        &:focus {
+            background: color-mix(in srgb, var(--tecas-orange) 88%, #000);
+        }
+    }
+
+    .s_tecas_cta_btn_wa {
+        background: #25D366;
+
+        &:hover,
+        &:focus {
+            background: color-mix(in srgb, #25D366 88%, #000);
+        }
+    }
+
+    // One file that already carries its multi-photo composition, so the only
+    // job here is the rounded corner and the full width of its column.
+    .s_tecas_photo {
+        width: 100%;
+        height: auto;
+        border-radius: 14px;
+    }
+}
+
+// ----------------------------------------------------------- three steps
+// A numbered path on the left, the photo on the right. The numerals are the
+// only ornament: outlined circles, orange type, sized so the column of three
+// reads as a sequence before a word of it is read.
+#wrapwrap .s_tecas_steps {
+
+    .s_tecas_lead_title {
+        margin-bottom: 3rem;
     }
 
     .s_tecas_steps_list {
@@ -542,63 +612,23 @@
         margin-bottom: 0;
     }
 
-    .s_tecas_steps_cta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
+}
+
+// -------------------------------------------------------------- why solar
+// Mirror of the steps block: the photo takes the left column and the argument
+// the right. Nothing but the two paragraphs is specific to it — title, buttons
+// and photo frame all come from the shared rules above.
+#wrapwrap .s_tecas_why {
+
+    .s_tecas_why_text {
+        color: var(--tecas-ink);
+        font-size: 1.0625rem;
+        line-height: 1.7;
+        margin-bottom: 1.5rem;
     }
 
-    // Written out rather than reusing .btn: Bootstrap's button classes are
-    // repainted by whichever palette the client picks in the editor, and these
-    // two colours are the point — TECAS orange, WhatsApp green.
-    .s_tecas_steps_btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.85rem 1.5rem;
-        border-radius: 4px;
-        font-size: 0.8125rem;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        text-decoration: none;
-        color: #fff;
-        transition: background-color 0.15s ease;
-
-        &:hover,
-        &:focus {
-            color: #fff;
-        }
-
-        .fa {
-            font-size: 1rem;
-        }
-    }
-
-    .s_tecas_steps_btn_quote {
-        background: var(--tecas-orange);
-
-        &:hover,
-        &:focus {
-            background: color-mix(in srgb, var(--tecas-orange) 88%, #000);
-        }
-    }
-
-    .s_tecas_steps_btn_wa {
-        background: #25D366;
-
-        &:hover,
-        &:focus {
-            background: color-mix(in srgb, #25D366 88%, #000);
-        }
-    }
-
-    // One file that already carries the inset-second-photo effect, so the only
-    // job here is the rounded corner and the full width of its column.
-    .s_tecas_steps_img {
-        width: 100%;
-        height: auto;
-        border-radius: 14px;
+    .s_tecas_why_body {
+        margin-bottom: 2.25rem;
     }
 }
 

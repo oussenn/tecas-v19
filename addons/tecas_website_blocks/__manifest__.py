@@ -10,7 +10,7 @@ to drop: views/shop_filters.xml scopes the shop's attribute filters to the
 category being browsed, and static/src/scss/header.scss spaces out the top
 menu. Neither changes colours or structure.
 """,
-    'version': '19.0.8.0.0',
+    'version': '19.0.9.0.0',
     'depends': ['website', 'website_sale'],
     'data': [
         'views/snippets/s_tecas_hero.xml',
@@ -21,6 +21,7 @@ menu. Neither changes colours or structure.
         'views/snippets/s_tecas_kits.xml',
         'views/snippets/s_tecas_solutions.xml',
         'views/snippets/s_tecas_steps.xml',
+        'views/snippets/s_tecas_why.xml',
         'views/snippets/snippets.xml',
         'views/shop_filters.xml',
     ],
