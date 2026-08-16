@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!--
+    "Nos services d'installation de panneaux solaires au Maroc": the four
+    audiences TECAS actually serves, each with its own photo, closing on the
+    same quote/WhatsApp pair as the other conversion blocks (shared
+    .s_tecas_lead_title and .s_tecas_cta rules — see blocks.scss).
+
+    Every "En savoir plus" points at /nos-services-solaires, the only services
+    page the site publishes today. Give each audience its own page and the four
+    links can be split; until then, four links to nowhere would be worse than
+    four links to the page that answers them.
+
+    The photos are one file per card, replaced from the editor. They point at a
+    shared placeholder until the real ones are dropped in.
+-->
+<template id="s_tecas_services" name="Nos services">
+    <section class="s_tecas_services pt64 pb64">
+        <div class="container">
+            <h2 class="s_tecas_lead_title text-center">
+                Nos services d'installation de<br/>
+                <span class="s_tecas_lead_title_soft">panneaux solaires au Maroc</span>
+            </h2>
+
+            <div class="row g-4">
+
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <div class="s_tecas_service_card">
+                        <img src="/tecas_website_blocks/static/src/img/s_tecas_service_photo.svg"
+                             class="s_tecas_service_img"
+                             alt="Installation solaire pour particuliers" loading="lazy"/>
+                        <div class="s_tecas_service_body">
+                            <h3 class="s_tecas_service_title">Installation solaires pour particuliers</h3>
+                            <p class="s_tecas_service_text">
+                                Une solution simple pour réduire vos factures d'électricité à
+                                domicile.
+                            </p>
+                            <a href="/nos-services-solaires" class="s_tecas_service_link">En savoir plus</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <div class="s_tecas_service_card">
+                        <img src="/tecas_website_blocks/static/src/img/s_tecas_service_photo.svg"
+                             class="s_tecas_service_img"
+                             alt="Installation solaire pour entreprises" loading="lazy"/>
+                        <div class="s_tecas_service_body">
+                            <h3 class="s_tecas_service_title">Installation solaire pour entreprises</h3>
+                            <p class="s_tecas_service_text">
+                                Optimisez vos coûts énergétiques et améliorez la rentabilité de
+                                votre activité.
+                            </p>
+                            <a href="/nos-services-solaires" class="s_tecas_service_link">En savoir plus</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <div class="s_tecas_service_card">
+                        <img src="/tecas_website_blocks/static/src/img/s_tecas_service_photo.svg"
+                             class="s_tecas_service_img"
+                             alt="Solutions solaires pour l'agriculture" loading="lazy"/>
+                        <div class="s_tecas_service_body">
+                            <h3 class="s_tecas_service_title">Solutions solaires pour agriculture</h3>
+                            <p class="s_tecas_service_text">
+                                Une énergie fiable pour alimenter vos équipements agricoles.
+                            </p>
+                            <a href="/nos-services-solaires" class="s_tecas_service_link">En savoir plus</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <div class="s_tecas_service_card">
+                        <img src="/tecas_website_blocks/static/src/img/s_tecas_service_photo.svg"
+                             class="s_tecas_service_img"
+                             alt="Maintenance et optimisation d'installations solaires" loading="lazy"/>
+                        <div class="s_tecas_service_body">
+                            <h3 class="s_tecas_service_title">Maintenance et optimisation</h3>
+                            <p class="s_tecas_service_text">
+                                Assurez la performance maximale de votre installation dans le
+                                temps.
+                            </p>
+                            <a href="/nos-services-solaires" class="s_tecas_service_link">En savoir plus</a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="s_tecas_cta s_tecas_cta_center">
+                <a href="/demande-devis" class="s_tecas_cta_btn s_tecas_cta_btn_quote">
+                    Demander un devis gratuit
+                </a>
+                <a href="https://api.whatsapp.com/send/?phone=212664276055&amp;text&amp;type=phone_number&amp;app_absent=0"
+                   class="s_tecas_cta_btn s_tecas_cta_btn_wa"
+                   target="_blank" rel="noopener">
+                    <i class="fa fa-whatsapp"/>WhatsApp
+                </a>
+            </div>
+        </div>
+    </section>
+</template>
+
+</odoo>

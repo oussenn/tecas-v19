@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" role="img"
+     aria-label="Emplacement de la photo du service">
+    <!-- One photo per card, replaced from the editor. Drawn at the card's 4:3
+         crop so the grid keeps its rhythm before the real photos land. -->
+    <rect width="600" height="450" fill="#EEF2FE"/>
+    <g fill="none" stroke="#8FA6E8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M170 300 h230 l50 100 H120 Z"/>
+        <path d="M145 350 h280 M285 300 v100"/>
+    </g>
+    <g fill="none" stroke="#F5A31E" stroke-width="7" stroke-linecap="round">
+        <circle cx="430" cy="130" r="34"/>
+        <path d="M430 66 v18 M430 176 v18 M366 130 h18 M476 130 h18
+                 M385 85 l13 13 M462 162 l13 13 M475 85 l-13 13 M398 162 l-13 13"/>
+    </g>
+    <text x="300" y="428" text-anchor="middle" font-family="Inter, Arial, sans-serif"
+          font-size="22" fill="#8FA6E8">Photo à remplacer</text>
+</svg>

@@ -506,6 +506,11 @@
         gap: 0.75rem;
     }
 
+    // Blocks that centre their content (the services grid) centre the pair too.
+    .s_tecas_cta_center {
+        justify-content: center;
+    }
+
     // Written out rather than reusing .btn: Bootstrap's button classes are
     // repainted by whichever palette the client picks in the editor, and these
     // two colours are the point — TECAS orange, WhatsApp green.
@@ -612,6 +617,79 @@
         margin-bottom: 0;
     }
 
+}
+
+// --------------------------------------------------------------- services
+// Four audiences, four cards, on a pale ground so the white cards read as
+// cards without needing a border. The photo crop is fixed at 4:3 so the four
+// titles land on the same line whatever the client uploads.
+#wrapwrap .s_tecas_services {
+    background: #F5F6F8;
+
+    .s_tecas_lead_title {
+        margin-bottom: 3rem;
+    }
+
+    .s_tecas_service_card {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 6px 18px color-mix(in srgb, var(--tecas-ink) 8%, transparent);
+    }
+
+    .s_tecas_service_img {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        object-fit: cover;
+        display: block;
+    }
+
+    .s_tecas_service_body {
+        padding: 1.5rem 1.5rem 1.75rem;
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+    }
+
+    .s_tecas_service_title {
+        font-size: 1.1875rem;
+        font-weight: 700;
+        color: var(--tecas-ink);
+        margin-bottom: 1rem;
+    }
+
+    .s_tecas_service_text {
+        color: var(--tecas-ink);
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+    }
+
+    // Pushed to the bottom so the four links align across cards of unequal
+    // text length.
+    .s_tecas_service_link {
+        margin-top: auto;
+        align-self: flex-start;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--tecas-ink);
+        text-decoration: none;
+        border-bottom: 2px solid var(--tecas-orange);
+        padding-bottom: 2px;
+
+        &:hover,
+        &:focus {
+            color: var(--tecas-orange);
+        }
+    }
+
+    .s_tecas_cta {
+        margin-top: 3rem;
+    }
 }
 
 // -------------------------------------------------------------- why solar
