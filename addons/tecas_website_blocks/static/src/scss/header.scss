@@ -55,12 +55,15 @@ header #top_menu .dropdown-menu {
         padding-bottom: 1rem;
     }
 
+    // The panel is set in ink, not in brand colour: over a white sheet a menu
+    // reads as text, and the theme's own link colour (a dark orange) turned
+    // every entry into a call to action. Only the underline moves on hover.
     .s_tecas_pm_title {
         display: block;
         margin-bottom: 0.6rem;
         padding-bottom: 0.5rem;
         border-bottom: 2px solid color-mix(in srgb, var(--tecas-ink) 12%, #fff);
-        color: var(--tecas-blue);
+        color: var(--tecas-ink);
         font-size: 1.02rem;
         font-weight: 700;
         line-height: 1.3;
@@ -69,7 +72,7 @@ header #top_menu .dropdown-menu {
         &:hover,
         &:focus {
             border-bottom-color: var(--tecas-orange);
-            color: var(--tecas-orange);
+            color: var(--tecas-blue);
         }
     }
 
@@ -91,7 +94,7 @@ header #top_menu .dropdown-menu {
         &:hover,
         &:focus {
             padding-left: 0.35rem;
-            color: var(--tecas-orange);
+            color: var(--tecas-blue);
         }
     }
 
@@ -108,7 +111,7 @@ header #top_menu .dropdown-menu {
     }
 
     .s_tecas_pm_all {
-        color: var(--tecas-orange);
+        color: var(--tecas-ink);
         font-size: 0.95rem;
         font-weight: 600;
         text-decoration: none;
@@ -120,6 +123,7 @@ header #top_menu .dropdown-menu {
 
     .s_tecas_pm_arrow {
         display: inline-block;
+        color: var(--tecas-orange);
         transition: padding-left 0.15s ease;
     }
 }
