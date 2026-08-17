@@ -8,11 +8,20 @@ Run it through the odoo shell:
 Set TECAS_DRY=1 in the container's environment to print the plan and roll back
 instead of committing.
 
+FAMILIES below is the whole of the client's catalogue plan, not a patch on it:
+re-running the script is how the tree is brought back to that plan after
+someone has moved things about in the backend.
+
 The menu itself is generated from this tree by tecas_website_blocks'
 models/tecas_autosync.py, so the shape below IS the menu: a family is a
-top-level category, a sub-family one of its children, and nothing that lacks a
-published product is ever shown. Anything the script cannot place is reported
-rather than guessed at.
+top-level category, a sub-family one of its children, in sequence order.
+Nothing a visitor cannot open is ever shown — either something published sits
+under it, or it carries tecas_show_when_empty. Anything the script cannot place
+is reported rather than guessed at.
+
+The homepage grid is a separate, stricter list: HOMEPAGE_FAMILIES in
+tecas_website_blocks/models/product_public_category.py. Rename a family here
+and it must be renamed there too, or it drops out of the grid.
 
 Categories are matched by name, not id, so the same script runs on staging
 (whose ids differ) and can be re-run on prod without doing anything twice.
@@ -68,14 +77,35 @@ FAMILIES = [
         ],
     },
     {
-        # Nothing is published under any pump category, and the client wants
-        # the family announced anyway, so the whole branch is flagged
+        'name': 'Batteries Solaires',
+        'adopt': ['BATTERIES', 'BATTERIE GEL / Lithium', 'BATTERIE   GEL / Lithium'],
+        'sequence': 30,
+        'children': [
+            {'name': 'Batteries Lithium', 'products': ['lithium', 'dyness']},
+            {'name': 'Batteries Gel', 'products': ['gel']},
+            {'name': 'Batteries AGM', 'products': ['agm']},
+        ],
+    },
+    {
+        # Renamed from "Pompes" on the client's instruction. The rename keeps
+        # the id, so every /shop/category/pompes-383 link already in the wild
+        # still resolves and redirects to the new slug.
+        #
+        # The client asked for no sub-category called "Pompes": there is none —
+        # pump products sit directly in this family or in a pump TYPE below it.
+        # Those four types are kept because they carry 400+ references and the
+        # brand tree (ZINITH, PEDROLLO, WELL…) hangs off "Pompes Immergées";
+        # flattening them would throw that away. Say the word and it is one
+        # more line here.
+        #
+        # Nothing is published under any pump category and the client wants the
+        # family announced anyway, so the whole branch is flagged
         # tecas_show_when_empty: it stays in the menu and its pages answer 200
         # with an empty grid instead of 404. Drop the flag once real pumps are
         # published and nothing else changes.
-        'name': 'Pompes',
-        'adopt': ['POMPES'],
-        'sequence': 30,
+        'name': 'Pompage Solaire',
+        'adopt': ['Pompes', 'POMPES'],
+        'sequence': 40,
         'show_when_empty': True,
         'children': [
             {'name': 'Pompes Solaires', 'show_when_empty': True},
@@ -86,16 +116,104 @@ FAMILIES = [
             {'name': 'Pompes de Surface', 'nest': ['POMPES CENTRIFUGES'],
              'show_when_empty': True},
             {'name': 'Pompes Vide-Cave', 'show_when_empty': True},
+            {'name': 'Variateurs de Vitesse', 'adopt': ['VARIATEUR DE VITESSE'],
+             'show_when_empty': True},
+            # An "armoire de pompage" IS a pre-wired control cabinet, so the
+            # existing category becomes the one the client asked for rather than
+            # sitting next to it as a duplicate. It leaves the coffrets family
+            # to do so — flag it if the client wants it in both.
+            {'name': 'Coffrets de Commande Pré-câblés', 'adopt': ['ARMOIRE DE POMPAGE'],
+             'show_when_empty': True},
+            {'name': 'Accessoires de Pompage', 'nest': ['PIECES DETACHEES POMPE'],
+             'show_when_empty': True},
         ],
     },
     {
-        'name': 'Batteries Solaires',
-        'adopt': ['BATTERIES', 'BATTERIE GEL / Lithium', 'BATTERIE   GEL / Lithium'],
-        'sequence': 40,
+        # New family. "Câble Solaire" and "Cable Electrique Souple" become two
+        # of its sub-families instead of being copied into it: that is what the
+        # client means by "retirer Cable Solaire des Accessoires pour éviter les
+        # doublons", and it carries the 34 cable references (and their urls)
+        # across untouched.
+        'name': 'Câbles Électriques & Solaires',
+        'sequence': 50,
+        'show_when_empty': True,
         'children': [
-            {'name': 'Batteries Lithium', 'products': ['lithium', 'dyness']},
-            {'name': 'Batteries Gel', 'products': ['gel']},
-            {'name': 'Batteries AGM', 'products': ['agm']},
+            {'name': 'Câbles Solaires DC', 'adopt': ['Câble Solaire', 'CABLE SOLAIRE'],
+             'show_when_empty': True},
+            {'name': 'Câbles U-1000 R2V', 'show_when_empty': True},
+            {'name': 'Câbles RV-K', 'show_when_empty': True},
+            {'name': 'Câbles Souples',
+             'adopt': ['Cable Electrique Souple', 'CABLE ELECTRIQUE SOUPLE'],
+             'show_when_empty': True},
+            {'name': 'Câbles Immergés', 'show_when_empty': True},
+            {'name': 'Accessoires de Câblage', 'show_when_empty': True},
+        ],
+    },
+    {
+        # Promoted out of Accessoires Solaires for the same reason as the
+        # cables: a new top-level family plus the old sub-category would be the
+        # duplicate the client is asking us to remove.
+        'name': 'Structures & Fixations Solaires',
+        'adopt': ['Structures et Fixations', 'STRUCTEUR EST FIXATIONS'],
+        'sequence': 60,
+        'show_when_empty': True,
+        'children': [
+            {'name': 'Rails de Montage', 'show_when_empty': True},
+            {'name': 'Jumelage de Rails', 'show_when_empty': True},
+            {'name': 'Clamps Solaires', 'show_when_empty': True},
+            {'name': 'Massifs de Fixation', 'show_when_empty': True},
+        ],
+    },
+    {
+        'name': 'Coffrets & Protections Électriques',
+        'adopt': ['Coffret de Protections AC/DC', 'COFFRET DE PROTECTIONS AC/DC'],
+        'sequence': 70,
+        'show_when_empty': True,
+        'children': [
+            # The two existing enclosure categories become the contents of the
+            # client's "Coffrets Électriques" rather than three siblings of it.
+            {'name': 'Coffrets Électriques', 'nest': ['COFFRET METAL BOX', 'COFFRET PVC'],
+             'show_when_empty': True},
+            {'name': 'Protections AC', 'show_when_empty': True},
+            {'name': 'Protections DC', 'adopt': ['PROTECTIONS DC'], 'show_when_empty': True},
+        ],
+    },
+    {
+        'name': 'Éclairage Solaire',
+        'adopt': ['ECLAIRAGE SOLAIRE'],
+        'sequence': 80,
+        'show_when_empty': True,
+        'children': [
+            {'name': 'Projecteurs Solaires', 'adopt': ['PROJECTEUR SOLAIRE'],
+             'show_when_empty': True},
+            {'name': 'Lampadaires Solaires', 'adopt': ['LAMPADAIRE SOLAIRE'],
+             'show_when_empty': True},
+            {'name': "Accessoires d'Éclairage Solaire", 'show_when_empty': True},
+        ],
+    },
+    {
+        # Entirely new: nothing in the catalogue matches any of these four, so
+        # the family is created empty and announced.
+        'name': 'Équipements & Solutions Énergétiques',
+        'sequence': 90,
+        'show_when_empty': True,
+        'children': [
+            {'name': 'Bornes de Recharge', 'show_when_empty': True},
+            {'name': 'Stations Météo', 'show_when_empty': True},
+            {'name': 'Équipements de Nettoyage Solaire', 'show_when_empty': True},
+            {'name': 'Accessoires Techniques', 'show_when_empty': True},
+        ],
+    },
+    {
+        # What is left of the old catch-all once the cables, the structures and
+        # the DC protections have families of their own.
+        'name': 'Accessoires Solaires',
+        'adopt': ['ACCESSOIRES SOLAIRES'],
+        'sequence': 100,
+        'children': [
+            {'name': 'Régulateurs de Charge', 'adopt': ['REGULATEURS DE CHARGE']},
+            {'name': 'Boîte de Jonction', 'adopt': ['BOITE JONCTION']},
+            {'name': 'Parafoudre', 'adopt': ['PARAFOUDRE']},
         ],
     },
 ]
@@ -105,18 +223,12 @@ FAMILIES = [
 # backend stays hidden.
 HIDDEN_FROM_WEBSITE = ('Promo',)
 
-# The remaining families keep their place in the menu; only their shouted names
-# are brought in line with the four above, plus one long-standing typo.
+# Families outside the client's plan. They keep their place; only their shouted
+# names are brought in line with the ten above.
 RENAMES = {
-    'COFFRET DE PROTECTIONS AC/DC': 'Coffret de Protections AC/DC',
-    'ACCESSOIRES SOLAIRES': 'Accessoires Solaires',
     'PROMO': 'Promo',
-    'PROTECTIONS DC': 'Protections DC',
-    'CABLE SOLAIRE': 'Câble Solaire',
-    'STRUCTEUR EST FIXATIONS': 'Structures et Fixations',
-    'REGULATEURS DE CHARGE': 'Régulateurs de Charge',
-    'BOITE JONCTION': 'Boîte de Jonction',
-    'PARAFOUDRE': 'Parafoudre',
+    'CHAUFFE-EAU SOLAIRES': 'Chauffe-eau Solaires',
+    'CONVERTISSEURS DE TENSION': 'Convertisseurs de Tension',
 }
 
 report = []

@@ -16,15 +16,17 @@
     To refresh the tiles later, re-render this template and swap in the result;
     do not paste the source.
 
-    Only categories that actually hold a published product get a tile.
-    Verified on prod: /shop/category/<id> returns 404 for a category with no
-    published products (290, 292, 294, 295, 347, 356 all 404 today), so
-    rendering every category would put six dead links on the homepage. As soon
-    as a product is published in one of them, its tile appears by itself.
+    Only categories that actually hold a published product get a tile — see
+    _tecas_homepage_tiles, which walks an ordered list of families and skips
+    any that would lead to an empty page. Verified on prod: /shop/category/<id>
+    returns 404 for a category with no published products, so rendering every
+    category would fill the homepage with dead links. As soon as a product is
+    published in one of them, its tile appears by itself.
 
-    The same lookup doubles as the image source, so a tile can never render
-    blank: category image if one is set, otherwise the first published
-    product's image.
+    _tecas_tile_image() supplies the picture — category image if one is set,
+    otherwise a product's — and returns False when there is genuinely nothing
+    to show, which is the only case where a family is dropped here rather than
+    in the model.
 
     Category names are printed with t-out, not t-field: they must not become
     editable in the page editor, or editing the page would rewrite the
@@ -43,21 +45,15 @@
          becoming an ordinary hand-editable set of tiles. -->
     <section class="s_tecas_categories pt24 pb64" data-tecas-auto="1">
         <div class="container">
-            <!-- Panels and inverters first, then the best-selling categories,
-                 seven in total. See models/product_public_category.py. -->
+            <!-- The seven families of HOMEPAGE_FAMILIES that have something
+                 published, then the best sellers. See
+                 models/product_public_category.py. -->
             <t t-set="tecas_cats"
                t-value="env['product.public.category'].sudo()._tecas_homepage_tiles(7)"/>
             <div class="row g-3">
                 <t t-foreach="tecas_cats" t-as="cat">
-                    <t t-set="cat_prod"
-                       t-value="env['product.template'].sudo().search(
-                                    [('public_categ_ids', 'child_of', cat.id),
-                                     ('is_published', '=', True)], limit=1)"/>
-                    <div t-if="cat_prod" class="col-6 col-lg-3">
-                        <t t-set="cat_img"
-                           t-value="'/web/image/product.public.category/%s/image_512' % cat.id
-                                    if cat.image_512 else
-                                    '/web/image/product.template/%s/image_512' % cat_prod.id"/>
+                    <t t-set="cat_img" t-value="cat._tecas_tile_image()"/>
+                    <div t-if="cat_img" class="col-6 col-lg-3">
                         <a t-attf-href="/shop/category/#{cat.id}" class="s_tecas_cat_tile">
                             <span class="s_tecas_cat_img">
                                 <img t-att-src="cat_img" t-att-alt="cat.name" loading="lazy"/>

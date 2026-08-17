@@ -19,11 +19,12 @@
     from the slug by the caller and passed in; names come pre-translated
     because the caller renders once per installed language.
 
-    Only families and sub-families that hold a published product are passed in.
+    Only families and sub-families a visitor can actually open are passed in.
     /shop/category/<id> answers 404 when nothing under it is published, so
-    rendering the whole tree would fill the menu with dead links — the Pompes
-    branch is exactly that case today. It appears on its own the moment a pump
-    is published.
+    rendering the whole tree would fill the menu with dead links; the families
+    the client announces ahead of their products (pumping, lighting, cabling)
+    carry tecas_show_when_empty, which makes their pages answer 200 with an
+    empty grid instead.
 
     data-tecas-auto marks the panel as generated. Edit it in the website editor
     and the attribute goes away with the change; autosync then leaves the panel
@@ -33,8 +34,12 @@
     <section class="s_tecas_products_menu o_colored_level o_cc o_cc1"
              data-tecas-auto="1" data-name="Nos Produits">
         <div class="container">
-            <div class="row">
-                <div t-foreach="groups" t-as="group" class="col-6 col-lg-3 s_tecas_pm_col">
+            <!-- Five families to a row, not Bootstrap's four: the client's
+                 catalogue is ten families deep, which a 4-wide grid breaks
+                 into two full rows and a stub. Five gives two even rows, and
+                 stays readable for any count in between. -->
+            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5">
+                <div t-foreach="groups" t-as="group" class="s_tecas_pm_col">
                     <a t-att-href="group['url']" class="s_tecas_pm_title" t-out="group['name']"/>
                     <nav t-if="group['children']" class="s_tecas_pm_list">
                         <a t-foreach="group['children']" t-as="child"

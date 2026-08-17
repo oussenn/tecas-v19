@@ -44,6 +44,12 @@ def _installed_langs(env):
     return codes or ['en_US']
 
 
+def _has_published_product(env, categ):
+    """True when something a visitor may buy sits under this category."""
+    return bool(env['product.template'].sudo().search_count(
+        [('public_categ_ids', 'child_of', categ.id), ('is_published', '=', True)], limit=1))
+
+
 def _is_browsable(env, categ):
     """True when a visitor can open this category's page.
 
@@ -56,22 +62,19 @@ def _is_browsable(env, categ):
         return False
     if categ.tecas_show_when_empty:
         return True
-    return bool(env['product.template'].sudo().search_count(
-        [('public_categ_ids', 'child_of', categ.id), ('is_published', '=', True)], limit=1))
+    return _has_published_product(env, categ)
 
 
-def _relevant_categories(env, include_empty=False):
+def _relevant_categories(env):
     """Top-level public categories a visitor can actually browse.
 
-    include_empty stays off for the homepage tiles: a tile needs a product
-    image to show at all, so an announced-but-empty family belongs in the menu
-    and nowhere else.
+    Whether a family is worth a homepage TILE is a stricter question, and the
+    caller asks it: see _tecas_homepage_tiles. Everything a visitor may open
+    belongs in the menu.
     """
-    categories = env['product.public.category'].sudo().search(
-        [('parent_id', '=', False)], order='sequence, name')
-    if include_empty:
-        return categories.filtered(lambda c: _is_browsable(env, c))
-    return categories.filtered(lambda c: not c.tecas_show_when_empty and _is_browsable(env, c))
+    return env['product.public.category'].sudo().search(
+        [('parent_id', '=', False)], order='sequence, name'
+    ).filtered(lambda c: _is_browsable(env, c))
 
 
 def _refresh_auto_blocks(env):
@@ -145,7 +148,7 @@ def _menu_groups(env):
         return _is_browsable(env, categ)
 
     groups = []
-    for root in _relevant_categories(env, include_empty=True):
+    for root in _relevant_categories(env):
         children = root.child_id.sorted(lambda c: (c.sequence, c.name or ''))
         groups.append({
             'name': (root.name or '').strip(),

@@ -1,12 +1,40 @@
+import re
+
 from odoo import api, fields, models
 from odoo.fields import Domain
 
-from .tecas_autosync import _relevant_categories
+from .tecas_autosync import _has_published_product, _relevant_categories
 
-# The families that always lead the homepage grid, whatever the sales say.
-# Matched on name rather than id so the pinning survives a category being
-# recreated, and so it reads as a rule instead of a magic number.
-PINNED_PREFIXES = ('PANNEAU', 'ONDULEUR')
+# The homepage grid, in the order the client wants it read: what an installer
+# buys first leads, and the rest follows the job down the roof.
+#
+# It is a PREFERENCE list, not a fixed grid. A family only gets a tile once
+# something under it is published — a tile leading to an empty page is worse
+# than no tile — so the list falls through to the next name until seven are
+# filled. Pompage and Éclairage are the two most searched families in Morocco
+# and hold no published product today; they take their place by themselves the
+# day one is published, with no code change.
+#
+# Matched on name rather than id so the order survives a category being
+# recreated, and so it reads as a rule instead of a row of magic numbers.
+HOMEPAGE_FAMILIES = (
+    'Panneaux Solaire',
+    'Onduleurs Solaires',
+    'Batteries Solaires',
+    'Pompage Solaire',
+    'Câbles Électriques & Solaires',
+    'Structures & Fixations Solaires',
+    'Coffrets & Protections Électriques',
+    'Éclairage Solaire',
+    'Accessoires Solaires',
+)
+
+
+def _key(name):
+    """Compare category names the way a human reads them: case and spacing
+    are noise, accents are not — "Câble" and "Cable" are two different
+    catalogue entries and must not be folded together."""
+    return re.sub(r'\s+', ' ', (name or '')).strip().upper()
 
 
 class ProductPublicCategory(models.Model):
@@ -55,29 +83,56 @@ class ProductPublicCategory(models.Model):
 
     @api.model
     def _tecas_homepage_tiles(self, limit=7):
-        """Categories for the homepage grid.
+        """Categories for the homepage grid, in HOMEPAGE_FAMILIES order.
 
-        Panels and inverters lead because they are what TECAS sells; the rest
-        of the row is filled by revenue, so the grid follows the catalogue
-        instead of being hand-maintained.
+        Anything the list does not name fills the remaining slots by revenue,
+        so a family added in the backend still reaches the homepage without a
+        deploy.
 
-        Only categories holding a published product are considered at all —
-        `/shop/category/<id>` 404s otherwise, so an unpublished category would
-        put a dead link on the homepage.
+        Only categories holding a published product are offered a tile. That is
+        deliberately stricter than the menu, which announces an empty family on
+        the tecas_show_when_empty flag: a menu entry is a promise that the page
+        exists, while a homepage tile is a promise that there is something to
+        buy behind it.
         """
-        categories = _relevant_categories(self.env)
+        categories = _relevant_categories(self.env).filtered(
+            lambda c: _has_published_product(self.env, c))
 
-        pinned = self.browse()
-        for prefix in PINNED_PREFIXES:
-            pinned |= categories.filtered(
-                lambda c, p=prefix: (c.name or '').upper().startswith(p)
-            )
+        by_name = {}
+        for categ in categories:
+            by_name.setdefault(_key(categ.name), categ)
 
-        rest = categories - pinned
+        ordered = self.browse()
+        for name in HOMEPAGE_FAMILIES:
+            categ = by_name.get(_key(name))
+            if categ:
+                ordered |= categ
+
+        rest = categories - ordered
         revenue = self._tecas_category_revenue(rest.ids)
         rest = rest.sorted(lambda c: revenue.get(c.id, 0.0), reverse=True)
 
-        return (pinned + rest)[:limit]
+        return (ordered + rest)[:limit]
+
+    def _tecas_tile_image(self):
+        """Image url for this category's tile, or False if it has none.
+
+        A category rarely carries its own picture, so the catalogue supplies
+        one: the first published product that has an image, then any product at
+        all. The `image_512 != False` clause is what makes that work — picking
+        the first published product outright, as this used to, hands back a
+        blank frame whenever that product happens to have no photo.
+        """
+        self.ensure_one()
+        if self.image_512:
+            return '/web/image/product.public.category/%s/image_512' % self.id
+
+        Product = self.env['product.template'].sudo()
+        has_image = [('public_categ_ids', 'child_of', self.id),
+                     ('image_512', '!=', False)]
+        product = (Product.search(has_image + [('is_published', '=', True)], limit=1)
+                   or Product.search(has_image, limit=1))
+        return '/web/image/product.template/%s/image_512' % product.id if product else False
 
     @api.model
     def _tecas_category_revenue(self, category_ids):

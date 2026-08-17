@@ -48,11 +48,19 @@ header #top_menu .dropdown-menu {
 .s_tecas_products_menu {
     padding: 1.75rem 0 1rem;
     // The theme sets a 20px body size; menu type is deliberately smaller so
-    // four families fit across the panel without wrapping.
+    // five families fit across the panel without wrapping.
     font-size: 1rem;
 
     .s_tecas_pm_col {
         padding-bottom: 1rem;
+    }
+
+    // Ten families fit on a laptop today, but the panel grows with the
+    // catalogue and a menu taller than the window cannot be closed by moving
+    // the mouse off it. Cap it at the viewport and let the last row scroll.
+    @media (min-width: 992px) {
+        max-height: calc(100vh - 8rem);
+        overflow-y: auto;
     }
 
     // The panel is set in ink, not in brand colour: over a white sheet a menu

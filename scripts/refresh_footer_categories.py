@@ -16,6 +16,8 @@ replace its t-foreach with frozen html and break every future drop — the exact
 trap that already cost this project a page once.
 """
 
+from xml.sax.saxutils import escape
+
 from lxml import etree
 
 from odoo.addons.tecas_website_blocks.models.tecas_autosync import AUTO_FLAG  # noqa: F401
@@ -46,9 +48,12 @@ for view in views:
             continue
         changed = False
         for node in lists:
+            # The names go into an xml string, so they have to be escaped:
+            # "Câbles Électriques & Solaires" is a parse error otherwise, and
+            # the ampersand only entered the catalogue with the 2026 families.
             wanted = etree.fromstring(
                 ('<ul>%s<li><a href="/shop">Tous les produits</a></li></ul>' % ''.join(
-                    '<li><a href="/shop/category/%s">%s</a></li>' % (c.id, c.name)
+                    '<li><a href="/shop/category/%s">%s</a></li>' % (c.id, escape(c.name or ''))
                     for c in categories)).encode('utf-8'))
             def items(ul):
                 return b''.join(etree.tostring(li) for li in ul)
