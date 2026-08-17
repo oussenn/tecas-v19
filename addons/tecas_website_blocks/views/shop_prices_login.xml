@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!--
+    Prices are for customers with an account. A visitor sees the product, its
+    description and its variants, and an invitation to sign in where the price
+    would be.
+
+    models/product_template.py does the hiding by setting core's
+    `prevent_zero_price_sale` for public users, which empties the price, the
+    quantity and the add-to-cart button on its own. These two inherits only
+    supply what takes their place.
+
+    Both boxes carry `redirect` back to the page being read, so signing in
+    returns the visitor to the product they were looking at rather than to the
+    shop's front page.
+-->
+
+<!-- Product page: fill core's empty #product_unavailable slot. -->
+<template id="product_price_login_box" inherit_id="website_sale.product_price"
+          name="Prix réservés aux clients connectés">
+    <xpath expr="//div[@id='product_unavailable']" position="inside">
+        <div t-if="request.env.user._is_public()" class="s_tecas_price_login">
+            <p class="s_tecas_price_login_lead">
+                Connectez-vous à votre compte pour accéder aux prix.
+            </p>
+            <div class="s_tecas_price_login_actions">
+                <a t-attf-href="/web/signup?redirect=#{request.httprequest.path}"
+                   class="btn btn-primary s_tecas_price_login_btn">Créez votre compte</a>
+                <span class="s_tecas_price_login_sep">·</span>
+                <a t-attf-href="/web/login?redirect=#{request.httprequest.path}"
+                   class="s_tecas_price_login_link">Se connecter</a>
+            </div>
+            <p class="s_tecas_price_login_note">
+                Besoin d'un chiffrage tout de suite ?
+                <a href="/demande-devis">Demandez un devis</a> — réponse sous 24&#160;h ouvrées.
+            </p>
+        </div>
+    </xpath>
+</template>
+
+<!-- Shop tiles: the price block is replaced by a quiet line, not left blank,
+     so a visitor understands the price exists and how to see it. -->
+<template id="products_item_price_login" inherit_id="website_sale.products_item"
+          name="Prix des vignettes réservés aux clients connectés">
+    <xpath expr="//div[hasclass('product_price')]" position="before">
+        <a t-if="request.env.user._is_public()"
+           t-attf-href="/web/login?redirect=#{request.httprequest.path}"
+           class="s_tecas_tile_price_login">Prix après connexion</a>
+    </xpath>
+    <xpath expr="//div[hasclass('product_price')]" position="attributes">
+        <attribute name="t-if">not request.env.user._is_public()</attribute>
+    </xpath>
+</template>
+
+</odoo>
