@@ -5,7 +5,7 @@
     "Nos marques": the manufacturers TECAS distributes, on a strip that slides
     on its own.
 
-    The list is deliberately static markup — seven files in
+    The list is deliberately static markup — one file per brand in
     static/src/img/brands/, not a query. A brand is a commercial relationship,
     not a row in the catalogue: the shop holds products by brand, but nothing
     in the data says which of them TECAS wants to show on the homepage, and a
@@ -18,6 +18,17 @@
     viewer sees while the first is being rewound. The duplicate is marked
     aria-hidden so a screen reader announces each brand once.
 
+    Every logo is a transparent PNG or an SVG, taken from the manufacturer's
+    own site or from Wikimedia, and normalised on the way in: white plates are
+    keyed out, and a logo published white-on-transparent is inverted so it is
+    visible on a light strip. Solax shipped exactly that, which is why the
+    first version of this strip had a hole in it.
+
+    FOUR ARE PLACEHOLDERS — cw-solar, eastman, saj and kbee are typographic
+    wordmarks, not the manufacturers' artwork: their sites blocked automated
+    access or publish no logo file. Replace the file (same name) with the
+    official one the moment the client sends it; nothing else needs to change.
+
     Plain html on purpose: this block is dropped into pages, and a t-* under
     #wrap costs the page every editor drop zone (see s_tecas_categories.xml).
 -->
@@ -29,22 +40,44 @@
         <div class="s_tecas_brands_viewport">
             <div class="s_tecas_brands_track">
                 <ul class="s_tecas_brands_run">
-                    <li><img src="/tecas_website_blocks/static/src/img/brands/jinko.jpg" alt="Jinko Solar" loading="lazy"/></li>
-                    <li><img src="/tecas_website_blocks/static/src/img/brands/canadian-solar.jpg" alt="Canadian Solar" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/jinko.png" alt="Jinko Solar" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/canadian-solar.png" alt="Canadian Solar" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/ja-solar.svg" alt="JA Solar" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/longi.png" alt="LONGi Solar" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/trina.svg" alt="Trina Solar" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/cw-solar.svg" alt="CW Solar" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/eastman.svg" alt="Eastman Solar" loading="lazy"/></li>
                     <li><img src="/tecas_website_blocks/static/src/img/brands/deye.png" alt="Deye" loading="lazy"/></li>
                     <li><img src="/tecas_website_blocks/static/src/img/brands/huawei.png" alt="Huawei" loading="lazy"/></li>
                     <li><img src="/tecas_website_blocks/static/src/img/brands/sungrow.svg" alt="Sungrow" loading="lazy"/></li>
-                    <li><img src="/tecas_website_blocks/static/src/img/brands/dyness.png" alt="Dyness" loading="lazy"/></li>
                     <li><img src="/tecas_website_blocks/static/src/img/brands/solax.png" alt="Solax" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/must.png" alt="MUST" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/saj.svg" alt="SAJ" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/invt.svg" alt="INVT" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/veichi.png" alt="Veichi" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/dyness.svg" alt="Dyness" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/sunlight.png" alt="Sunlight" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/kbee.svg" alt="KBEE Cable" loading="lazy"/></li>
                 </ul>
                 <ul class="s_tecas_brands_run" aria-hidden="true">
-                    <li><img src="/tecas_website_blocks/static/src/img/brands/jinko.jpg" alt="" loading="lazy"/></li>
-                    <li><img src="/tecas_website_blocks/static/src/img/brands/canadian-solar.jpg" alt="" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/jinko.png" alt="" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/canadian-solar.png" alt="" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/ja-solar.svg" alt="" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/longi.png" alt="" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/trina.svg" alt="" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/cw-solar.svg" alt="" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/eastman.svg" alt="" loading="lazy"/></li>
                     <li><img src="/tecas_website_blocks/static/src/img/brands/deye.png" alt="" loading="lazy"/></li>
                     <li><img src="/tecas_website_blocks/static/src/img/brands/huawei.png" alt="" loading="lazy"/></li>
                     <li><img src="/tecas_website_blocks/static/src/img/brands/sungrow.svg" alt="" loading="lazy"/></li>
-                    <li><img src="/tecas_website_blocks/static/src/img/brands/dyness.png" alt="" loading="lazy"/></li>
                     <li><img src="/tecas_website_blocks/static/src/img/brands/solax.png" alt="" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/must.png" alt="" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/saj.svg" alt="" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/invt.svg" alt="" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/veichi.png" alt="" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/dyness.svg" alt="" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/sunlight.png" alt="" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/kbee.svg" alt="" loading="lazy"/></li>
                 </ul>
             </div>
         </div>

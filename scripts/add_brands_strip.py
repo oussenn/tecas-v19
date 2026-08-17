@@ -38,29 +38,38 @@ for lang in langs:
     view_lang = view.with_context(lang=lang)
     root = etree.fromstring(view_lang.arch_db.encode('utf-8'))
     wrap = root.xpath("//div[@id='wrap']")[0]
-    if wrap.xpath("./section[contains(@class,'%s')]" % ADD_CLASS):
-        report.append('%s: already there' % lang)
-        continue
-
     qweb_before = len(wrap.xpath("descendant-or-self::*[@*[starts-with(name(), 't-')]]"))
     block = etree.fromstring(('<root>%s</root>' % rendered).encode('utf-8')).find('section')
     block.set('data-snippet', 's_tecas_brands')
     block.set('data-name', 'Nos marques')
 
-    anchors = wrap.xpath("./section[contains(@class,'%s')]" % ANCHOR_CLASS)
-    if anchors:
-        anchors[0].addnext(block)
-        where = 'after .%s' % ANCHOR_CLASS
+    # The page holds a copy, so editing the brand list in the template reaches
+    # the site only by replacing that copy — which is also how a brand gets
+    # added or a logo file swapped.
+    existing = wrap.xpath("./section[contains(@class,'%s')]" % ADD_CLASS)
+    if existing:
+        current = etree.tostring(existing[0], encoding='unicode')
+        block.tail = existing[0].tail
+        if current == etree.tostring(block, encoding='unicode'):
+            report.append('%s: already up to date' % lang)
+            continue
+        existing[0].getparent().replace(existing[0], block)
+        where = 'replaced (%d logos)' % len(block.xpath('.//li'))
     else:
-        wrap.insert(0, block)
-        where = 'at the top of #wrap'
+        anchors = wrap.xpath("./section[contains(@class,'%s')]" % ANCHOR_CLASS)
+        if anchors:
+            anchors[0].addnext(block)
+            where = 'inserted after .%s' % ANCHOR_CLASS
+        else:
+            wrap.insert(0, block)
+            where = 'inserted at the top of #wrap'
 
     if len(wrap.xpath("descendant-or-self::*[@*[starts-with(name(), 't-')]]")) > qweb_before:
         env.cr.rollback()
         raise SystemExit('the strip added QWeb under #wrap — page NOT written')
 
     view_lang.write({'arch_db': etree.tostring(root, encoding='unicode')})
-    report.append('%s: inserted %s' % (lang, where))
+    report.append('%s: %s' % (lang, where))
 
 env.cr.commit()
 print('\n--- brands strip ---')

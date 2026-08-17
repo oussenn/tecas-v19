@@ -1002,7 +1002,8 @@
     .s_tecas_brands_track {
         display: flex;
         width: max-content;
-        animation: s_tecas_brands_slide 38s linear infinite;
+        // Paced by the number of logos: eighteen at 38s would race past.
+        animation: s_tecas_brands_slide 85s linear infinite;
     }
 
     // Let a visitor stop the strip to read a name.
@@ -1013,9 +1014,9 @@
     .s_tecas_brands_run {
         display: flex;
         align-items: center;
-        gap: 4rem;
+        gap: 3.5rem;
         margin: 0;
-        padding: 0 2rem;
+        padding: 0 1.75rem;
         list-style: none;
     }
 
