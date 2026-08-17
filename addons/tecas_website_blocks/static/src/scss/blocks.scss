@@ -977,9 +977,10 @@
 // exactly its own width the animation restarts, and because the second run is
 // then where the first began, the seam is invisible.
 .s_tecas_brands {
-    // The logos come from seven different brand kits — some square with a
-    // white ground, some wide and transparent. Greyscale plus a common box
-    // height is what makes them read as one row rather than seven stickers.
+    // The logos come from eighteen different brand kits, in every shape and
+    // colour their owners chose. They are shown as they are — a common box
+    // height is what makes them read as one row; hovering only stops the
+    // strip, so a visitor can read a name without anything changing colour.
     --tecas-brand-height: 2.75rem;
 
     .s_tecas_brands_eyebrow {
@@ -1025,14 +1026,6 @@
         width: auto;
         max-width: 9rem;
         object-fit: contain;
-        filter: grayscale(1);
-        opacity: 0.65;
-        transition: filter 0.2s ease, opacity 0.2s ease;
-    }
-
-    .s_tecas_brands_run img:hover {
-        filter: none;
-        opacity: 1;
     }
 }
 
