@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!--
+    "Nos marques": the manufacturers TECAS distributes, on a strip that slides
+    on its own.
+
+    The list is deliberately static markup — seven files in
+    static/src/img/brands/, not a query. A brand is a commercial relationship,
+    not a row in the catalogue: the shop holds products by brand, but nothing
+    in the data says which of them TECAS wants to show on the homepage, and a
+    logo wall that changes because a product was archived would be worse than
+    one edited by hand twice a year. Add or remove a brand by editing the list
+    below (and the strip in the page, see scripts/add_brands_strip.py).
+
+    The track is written TWICE. A marquee that loops seamlessly has to travel
+    exactly one copy's width and start over, so the second run is what the
+    viewer sees while the first is being rewound. The duplicate is marked
+    aria-hidden so a screen reader announces each brand once.
+
+    Plain html on purpose: this block is dropped into pages, and a t-* under
+    #wrap costs the page every editor drop zone (see s_tecas_categories.xml).
+-->
+<template id="s_tecas_brands" name="Nos marques">
+    <section class="s_tecas_brands pt40 pb40">
+        <div class="container">
+            <p class="s_tecas_brands_eyebrow">Les marques que nous distribuons</p>
+        </div>
+        <div class="s_tecas_brands_viewport">
+            <div class="s_tecas_brands_track">
+                <ul class="s_tecas_brands_run">
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/jinko.jpg" alt="Jinko Solar" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/canadian-solar.jpg" alt="Canadian Solar" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/deye.png" alt="Deye" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/huawei.png" alt="Huawei" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/sungrow.svg" alt="Sungrow" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/dyness.png" alt="Dyness" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/solax.png" alt="Solax" loading="lazy"/></li>
+                </ul>
+                <ul class="s_tecas_brands_run" aria-hidden="true">
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/jinko.jpg" alt="" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/canadian-solar.jpg" alt="" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/deye.png" alt="" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/huawei.png" alt="" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/sungrow.svg" alt="" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/dyness.png" alt="" loading="lazy"/></li>
+                    <li><img src="/tecas_website_blocks/static/src/img/brands/solax.png" alt="" loading="lazy"/></li>
+                </ul>
+            </div>
+        </div>
+    </section>
+</template>
+
+</odoo>

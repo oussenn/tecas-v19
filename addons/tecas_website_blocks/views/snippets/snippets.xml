@@ -54,6 +54,10 @@
                t-thumbnail="/tecas_website_blocks/static/src/img/snippets_thumbs/s_tecas_news.svg">
                 <keywords>actualites, blog, articles, news, presse</keywords>
             </t>
+            <t t-snippet="tecas_website_blocks.s_tecas_brands" string="Nos marques" group="tecas"
+               t-thumbnail="/tecas_website_blocks/static/src/img/snippets_thumbs/s_tecas_brands.svg">
+                <keywords>marques, logos, partenaires, jinko, huawei, deye, defilement</keywords>
+            </t>
         </xpath>
 
     </template>

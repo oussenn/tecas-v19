@@ -971,3 +971,93 @@
         }
     }
 }
+
+// ------------------------------------------------------------- marques
+// Logo strip. Two identical runs slide left together; when the first has gone
+// exactly its own width the animation restarts, and because the second run is
+// then where the first began, the seam is invisible.
+.s_tecas_brands {
+    // The logos come from seven different brand kits — some square with a
+    // white ground, some wide and transparent. Greyscale plus a common box
+    // height is what makes them read as one row rather than seven stickers.
+    --tecas-brand-height: 2.75rem;
+
+    .s_tecas_brands_eyebrow {
+        margin: 0 0 1.25rem;
+        color: color-mix(in srgb, var(--tecas-ink) 60%, #fff);
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-align: center;
+        text-transform: uppercase;
+    }
+
+    .s_tecas_brands_viewport {
+        overflow: hidden;
+        // Fades the logos into the page edges instead of cutting them off
+        // mid-stride.
+        mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+    }
+
+    .s_tecas_brands_track {
+        display: flex;
+        width: max-content;
+        animation: s_tecas_brands_slide 38s linear infinite;
+    }
+
+    // Let a visitor stop the strip to read a name.
+    .s_tecas_brands_viewport:hover .s_tecas_brands_track {
+        animation-play-state: paused;
+    }
+
+    .s_tecas_brands_run {
+        display: flex;
+        align-items: center;
+        gap: 4rem;
+        margin: 0;
+        padding: 0 2rem;
+        list-style: none;
+    }
+
+    .s_tecas_brands_run img {
+        height: var(--tecas-brand-height);
+        width: auto;
+        max-width: 9rem;
+        object-fit: contain;
+        filter: grayscale(1);
+        opacity: 0.65;
+        transition: filter 0.2s ease, opacity 0.2s ease;
+    }
+
+    .s_tecas_brands_run img:hover {
+        filter: none;
+        opacity: 1;
+    }
+}
+
+@keyframes s_tecas_brands_slide {
+    from { transform: translateX(0); }
+    // Exactly one run: the second is already in place when it restarts.
+    to { transform: translateX(-50%); }
+}
+
+// Motion is decoration here; the brands must still be readable without it.
+@media (prefers-reduced-motion: reduce) {
+    .s_tecas_brands {
+        .s_tecas_brands_track {
+            animation: none;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .s_tecas_brands_run {
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2.5rem;
+
+            &[aria-hidden="true"] {
+                display: none;
+            }
+        }
+    }
+}

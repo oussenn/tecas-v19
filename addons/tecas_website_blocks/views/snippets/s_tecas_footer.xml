@@ -93,10 +93,23 @@
                 <!-- Contact, straight off the company record -->
                 <div class="col-12 col-lg-3">
                     <t t-set="company" t-value="site.company_id.sudo()"/>
+                    <!-- The site's address is not always the company's: TECAS
+                         invoices from its registered address and receives at
+                         its showroom. ir.config_parameter tecas.website_address
+                         holds the one visitors should see (first line = the
+                         name), and the company record stays the fallback so an
+                         unconfigured site still shows something true. Written
+                         by scripts/set_website_address.py. -->
+                    <t t-set="site_address" t-value="env['ir.config_parameter'].sudo().get_param('tecas.website_address')"/>
+                    <t t-set="address_lines" t-value="[l.strip() for l in (site_address or '').splitlines() if l.strip()]"/>
                     <ul class="s_tecas_footer_contact">
                         <li>
                             <i class="fa fa-map-marker"/>
-                            <span>
+                            <span t-if="address_lines">
+                                <strong t-out="address_lines[0]"/>
+                                <t t-foreach="address_lines[1:]" t-as="line"><br/><t t-out="line"/></t>
+                            </span>
+                            <span t-else="">
                                 <strong t-out="company.name"/><br/>
                                 <t t-out="company.street"/>
                                 <t t-if="company.street2"><br/><t t-out="company.street2"/></t>

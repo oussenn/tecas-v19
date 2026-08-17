@@ -13,7 +13,7 @@ tecas_show_when_empty flag on product.public.category lets a family be browsed
 before its products are published, and the two SCSS files dress the top menu
 (header) and shrink the sub-category strip on category pages (shop).
 """,
-    'version': '19.0.18.0.0',
+    'version': '19.0.19.0.0',
     'depends': ['website', 'website_sale', 'website_blog'],
     'data': [
         'views/snippets/s_tecas_hero.xml',
@@ -28,6 +28,7 @@ before its products are published, and the two SCSS files dress the top menu
         'views/snippets/s_tecas_services.xml',
         'views/snippets/s_tecas_reviews.xml',
         'views/snippets/s_tecas_news.xml',
+        'views/snippets/s_tecas_brands.xml',
         'views/snippets/snippets.xml',
         'views/products_menu.xml',
         'views/shop_filters.xml',
