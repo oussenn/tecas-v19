@@ -25,10 +25,14 @@ HOMEPAGE_FAMILIES = (
     # client's own families lower down the list it was Accessoires Solaires
     # that fell off. Priority is the order, so the named five cannot be
     # displaced by a family nobody asked for.
+    #
+    # "Pompes" is the pumps; "Pompage Solaire" is the equipment that drives
+    # them, and they are two different families. The pumps are what people
+    # search for, so they hold the slot and the equipment is a fill-in.
     'Panneaux Solaire',
     'Onduleurs Solaires',
     'Batteries Solaires',
-    'Pompage Solaire',
+    'Pompes',
     'Éclairage Solaire',
     'Coffrets & Protections Électriques',
     'Accessoires Solaires',
@@ -36,6 +40,7 @@ HOMEPAGE_FAMILIES = (
     # empty — which is what they do while pumping has nothing published.
     'Câbles Électriques & Solaires',
     'Structures & Fixations Solaires',
+    'Pompage Solaire',
 )
 
 

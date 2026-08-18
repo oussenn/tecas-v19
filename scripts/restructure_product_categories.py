@@ -87,45 +87,55 @@ FAMILIES = [
         ],
     },
     {
-        # Renamed from "Pompes" on the client's instruction. The rename keeps
-        # the id, so every /shop/category/pompes-383 link already in the wild
-        # still resolves and redirects to the new slug.
+        # Two families, not one. "Pompes" is the pumps themselves; "Pompage
+        # Solaire" below is the equipment that drives them. The first pass at
+        # the client's brief read it as a rename of this family and merged the
+        # two; unmerge_pumping() puts the name back before FAMILIES is applied.
         #
-        # The client asked for no sub-category called "Pompes": there is none —
-        # pump products sit directly in this family or in a pump TYPE below it.
-        # Those four types are kept because they carry 400+ references and the
-        # brand tree (ZINITH, PEDROLLO, WELL…) hangs off "Pompes Immergées";
-        # flattening them would throw that away. Say the word and it is one
-        # more line here.
+        # Keeping the id is what matters here: this branch carries 400+
+        # references and the brand tree (ZINITH, PEDROLLO, WELL...), so every
+        # /shop/category/pompes-383 link already in the wild still resolves.
         #
         # Nothing is published under any pump category and the client wants the
         # family announced anyway, so the whole branch is flagged
         # tecas_show_when_empty: it stays in the menu and its pages answer 200
         # with an empty grid instead of 404. Drop the flag once real pumps are
         # published and nothing else changes.
-        'name': 'Pompage Solaire',
-        'adopt': ['Pompes', 'POMPES'],
+        'name': 'Pompes',
+        'adopt': ['POMPES'],
         'sequence': 40,
         'show_when_empty': True,
         'children': [
             {'name': 'Pompes Solaires', 'show_when_empty': True},
+            # Spare parts belong with the pumps, not with the pumping
+            # equipment; nested back here now that the two are separate.
             {'name': 'Pompes Immergées', 'adopt': ['LES POMPE IMMERGEE', 'POMPES IMMERGEES'],
-             'show_when_empty': True},
+             'nest': ['PIECES DETACHEES POMPE'], 'show_when_empty': True},
             # Centrifugal pumps are surface pumps; kept as their own sub-level
             # so the client can move them if that reading is wrong.
             {'name': 'Pompes de Surface', 'nest': ['POMPES CENTRIFUGES'],
              'show_when_empty': True},
             {'name': 'Pompes Vide-Cave', 'show_when_empty': True},
+        ],
+    },
+    {
+        # The client's brief, exactly: three sub-categories, and no "Pompes"
+        # among them. What belongs here is the equipment that makes a solar
+        # pumping installation run — not the pumps, which have their own
+        # family above.
+        'name': 'Pompage Solaire',
+        'sequence': 50,
+        'show_when_empty': True,
+        'children': [
             {'name': 'Variateurs de Vitesse', 'adopt': ['VARIATEUR DE VITESSE'],
              'show_when_empty': True},
             # An "armoire de pompage" IS a pre-wired control cabinet, so the
             # existing category becomes the one the client asked for rather than
-            # sitting next to it as a duplicate. It leaves the coffrets family
-            # to do so — flag it if the client wants it in both.
+            # sitting next to it as a duplicate. It left the coffrets family to
+            # do so — say so if the client wants it in both.
             {'name': 'Coffrets de Commande Pré-câblés', 'adopt': ['ARMOIRE DE POMPAGE'],
              'show_when_empty': True},
-            {'name': 'Accessoires de Pompage', 'nest': ['PIECES DETACHEES POMPE'],
-             'show_when_empty': True},
+            {'name': 'Accessoires de Pompage', 'show_when_empty': True},
         ],
     },
     {
@@ -135,7 +145,7 @@ FAMILIES = [
         # doublons", and it carries the 34 cable references (and their urls)
         # across untouched.
         'name': 'Câbles Électriques & Solaires',
-        'sequence': 50,
+        'sequence': 60,
         'show_when_empty': True,
         'children': [
             {'name': 'Câbles Solaires DC', 'adopt': ['Câble Solaire', 'CABLE SOLAIRE'],
@@ -155,7 +165,7 @@ FAMILIES = [
         # duplicate the client is asking us to remove.
         'name': 'Structures & Fixations Solaires',
         'adopt': ['Structures et Fixations', 'STRUCTEUR EST FIXATIONS'],
-        'sequence': 60,
+        'sequence': 70,
         'show_when_empty': True,
         'children': [
             {'name': 'Rails de Montage', 'show_when_empty': True},
@@ -167,7 +177,7 @@ FAMILIES = [
     {
         'name': 'Coffrets & Protections Électriques',
         'adopt': ['Coffret de Protections AC/DC', 'COFFRET DE PROTECTIONS AC/DC'],
-        'sequence': 70,
+        'sequence': 80,
         'show_when_empty': True,
         'children': [
             # The two existing enclosure categories become the contents of the
@@ -181,7 +191,7 @@ FAMILIES = [
     {
         'name': 'Éclairage Solaire',
         'adopt': ['ECLAIRAGE SOLAIRE'],
-        'sequence': 80,
+        'sequence': 90,
         'show_when_empty': True,
         'children': [
             {'name': 'Projecteurs Solaires', 'adopt': ['PROJECTEUR SOLAIRE'],
@@ -195,7 +205,7 @@ FAMILIES = [
         # Entirely new: nothing in the catalogue matches any of these four, so
         # the family is created empty and announced.
         'name': 'Équipements & Solutions Énergétiques',
-        'sequence': 90,
+        'sequence': 100,
         'show_when_empty': True,
         'children': [
             {'name': 'Bornes de Recharge', 'show_when_empty': True},
@@ -209,7 +219,7 @@ FAMILIES = [
         # the DC protections have families of their own.
         'name': 'Accessoires Solaires',
         'adopt': ['ACCESSOIRES SOLAIRES'],
-        'sequence': 100,
+        'sequence': 110,
         'children': [
             {'name': 'Régulateurs de Charge', 'adopt': ['REGULATEURS DE CHARGE']},
             {'name': 'Boîte de Jonction', 'adopt': ['BOITE JONCTION']},
@@ -363,6 +373,14 @@ def ensure(spec, parent, sequence, index):
                       % (spec['name'], categ.id,
                          ' under "%s"' % parent.name if parent else ''))
 
+    # Forget every other name this record was indexed under. A rename
+    # otherwise leaves the OLD name still pointing at it, and the next
+    # family that lists that name adopts — or merges away — the wrong
+    # record. That is exactly how "Pompes" and "Pompage Solaire" became
+    # one category instead of two.
+    for bucket in index.values():
+        if categ in bucket:
+            bucket.remove(categ)
     index[norm(spec['name'])] = [categ]
     return categ
 
@@ -416,7 +434,35 @@ def backup_tree():
         raise
 
 
+def unmerge_pumping():
+    """Put the name "Pompes" back on the branch that holds the pumps.
+
+    The first pass at the client's brief read "Pompage Solaire" as a rename of
+    the existing "Pompes" family. It is not one: the client keeps the pumps
+    themselves under Pompes, and Pompage Solaire is the equipment around them —
+    drives, pre-wired control cabinets, accessories. Renaming merged two
+    families into one and left the client's three sub-categories sitting beside
+    four kinds of pump.
+
+    Renaming it back, rather than moving the pumps into a new record, is what
+    keeps the 400+ references, the brand tree and the existing urls attached to
+    id 383. FAMILIES then builds "Pompage Solaire" fresh alongside it.
+
+    Guarded on the branch still holding "Pompes Immergées", which is what makes
+    this a one-off: the Pompage Solaire created below has no such child, so a
+    second run does nothing.
+    """
+    for categ in Category.with_context(active_test=False).search(
+            [('name', '=', 'Pompage Solaire')]):
+        if any(norm(child.name) == norm('Pompes Immergées') for child in categ.child_id):
+            set_name(categ, 'Pompes')
+            report.append('"Pompage Solaire" (%s) renamed back to "Pompes" — they are two '
+                          'separate families, and this is the one with the pumps in it'
+                          % categ.id)
+
+
 backup_tree()
+unmerge_pumping()
 index = index_categories()
 
 for family_spec in FAMILIES:
