@@ -155,8 +155,10 @@ FAMILIES = [
             {'name': 'Câbles Souples',
              'adopt': ['Cable Electrique Souple', 'CABLE ELECTRIQUE SOUPLE'],
              'show_when_empty': True},
-            {'name': 'Câbles Immergés', 'show_when_empty': True},
-            {'name': 'Accessoires de Câblage', 'show_when_empty': True},
+            # "Câbles Immergés" and "Accessoires de Câblage" were the client's
+            # fifth and sixth; the menu carries four per family, so they are
+            # folded into the family itself by DROP_INTO_PARENT below. Their
+            # references stay on the site — only the sub-category goes.
         ],
     },
     {
@@ -202,19 +204,6 @@ FAMILIES = [
         ],
     },
     {
-        # Entirely new: nothing in the catalogue matches any of these four, so
-        # the family is created empty and announced.
-        'name': 'Équipements & Solutions Énergétiques',
-        'sequence': 100,
-        'show_when_empty': True,
-        'children': [
-            {'name': 'Bornes de Recharge', 'show_when_empty': True},
-            {'name': 'Stations Météo', 'show_when_empty': True},
-            {'name': 'Équipements de Nettoyage Solaire', 'show_when_empty': True},
-            {'name': 'Accessoires Techniques', 'show_when_empty': True},
-        ],
-    },
-    {
         # What is left of the old catch-all once the cables, the structures and
         # the DC protections have families of their own.
         'name': 'Accessoires Solaires',
@@ -224,6 +213,19 @@ FAMILIES = [
             {'name': 'Régulateurs de Charge', 'adopt': ['REGULATEURS DE CHARGE']},
             {'name': 'Boîte de Jonction', 'adopt': ['BOITE JONCTION']},
             {'name': 'Parafoudre', 'adopt': ['PARAFOUDRE']},
+            # What was "Équipements & Solutions Énergétiques". That family is
+            # retired from the site (HIDDEN_FROM_WEBSITE) and Accessoires
+            # Solaires takes its place in the menu, carrying its four entries —
+            # which also gives this family the sub-categories it was missing.
+            # The first three above have nothing published and are not flagged,
+            # so the menu shows exactly these four.
+            {'name': 'Bornes de Recharge', 'show_when_empty': True},
+            {'name': 'Stations Météo', 'show_when_empty': True},
+            # Shortened: the old name was the only label in the column that
+            # wrapped onto a second line, which is what made it scroll.
+            {'name': 'Accessoires de Nettoyage',
+             'adopt': ['Équipements de Nettoyage Solaire'], 'show_when_empty': True},
+            {'name': 'Accessoires Techniques', 'show_when_empty': True},
         ],
     },
 ]
@@ -245,20 +247,32 @@ FAMILIES = [
 REFILE = [
     {'to': 'Câbles U-1000 R2V', 'from': 'Câbles Solaires DC',
      'names': ['Cable U1000 R2V']},
-    {'to': 'Câbles Immergés', 'from': 'Câbles Solaires DC',
+    {'to': 'Câbles Électriques & Solaires', 'from': 'Câbles Solaires DC',
      'names': ['Cable Immergé']},
     {'to': 'Câbles Souples', 'from': 'Câbles Solaires DC',
      'names': ['Câble Souple']},
-    {'to': 'Accessoires de Câblage', 'from': 'Câbles Solaires DC',
+    {'to': 'Câbles Électriques & Solaires', 'from': 'Câbles Solaires DC',
      'names': ['Chemain de Câble']},
     {'to': 'Bornes de Recharge', 'from': 'Câbles Solaires DC',
      'contains': ['teltocharge']},
 ]
 
+# Sub-categories folded back into their family: the products move up, the
+# category itself is deleted. The menu carries four entries per family, and
+# these were the fifth and sixth of a six-entry list.
+DROP_INTO_PARENT = [
+    ('Câbles Immergés', 'Câbles Électriques & Solaires'),
+    ('Accessoires de Câblage', 'Câbles Électriques & Solaires'),
+]
+
 # Categories the client keeps in the catalogue but does not want on the site.
 # Only ever set here — never cleared, so a category hidden by hand from the
 # backend stays hidden.
-HIDDEN_FROM_WEBSITE = ('Promo',)
+#
+# "Équipements & Solutions Énergétiques" is hidden rather than deleted: its four
+# sub-categories now hang off Accessoires Solaires, so the family itself is
+# empty, but keeping the record means the decision is one checkbox to undo.
+HIDDEN_FROM_WEBSITE = ('Promo', 'Équipements & Solutions Énergétiques')
 
 # Families outside the client's plan. They keep their place; only their shouted
 # names are brought in line with the ten above.
@@ -477,6 +491,20 @@ for family_spec in FAMILIES:
                     nested.write({'parent_id': child.id})
                     report.append('"%s" (%s) moved under "%s"'
                                   % (nested.name, nested.id, child.name))
+
+for child_name, parent_name in DROP_INTO_PARENT:
+    parent = (index.get(norm(parent_name)) or [None])[0]
+    if not parent:
+        report.append('DROP skipped: "%s" is missing' % parent_name)
+        continue
+    for categ in list(index.get(norm(child_name)) or []):
+        if not categ.exists():
+            continue
+        index[norm(child_name)].remove(categ)
+        # merge_into moves the products up and unlinks the category, so the
+        # references stay on the site under the family instead of vanishing
+        # with the sub-category.
+        merge_into(parent, categ)
 
 for spec in REFILE:
     target = (index.get(norm(spec['to'])) or [None])[0]

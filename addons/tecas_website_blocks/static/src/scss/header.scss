@@ -52,30 +52,36 @@ header #top_menu .dropdown-menu {
     font-size: 1rem;
 
     // One sub-category line: the link's own line box plus its padding. The
-    // list is capped at four of these, so this has to follow
-    // .s_tecas_pm_link — change one and change the other.
+    // list cap is expressed in these, so this has to follow
+    // a.s_tecas_pm_link — change one and change the other.
     --tecas-pm-line: #{0.95rem * 1.35 + 0.64rem};
 
     .s_tecas_pm_col {
         padding-bottom: 1rem;
     }
 
-    // The panel is a single block, whatever the catalogue does to it: every
-    // family shows four sub-categories and scrolls for the rest (see
-    // .s_tecas_pm_list), so ten families are two even rows that fit on a
-    // laptop. Without that cap the tallest column sets the height for the
-    // whole panel — seven pump entries pushed the last row off the bottom of
-    // the screen — and a menu taller than the window cannot be dismissed by
-    // moving the mouse off it. The viewport cap stays as a last resort.
+    // The panel is a single block: ten families in two even rows of five,
+    // each showing all four of its sub-categories with no scrollbar anywhere.
+    // The viewport cap stays as a last resort — a menu taller than the window
+    // cannot be dismissed by moving the mouse off it.
     @media (min-width: 992px) {
         max-height: calc(100vh - 8rem);
         overflow-y: auto;
     }
 
-    // The panel is set in ink, not in brand colour: over a white sheet a menu
-    // reads as text, and the theme's own link colour (a dark orange) turned
-    // every entry into a call to action. Only the underline moves on hover.
-    .s_tecas_pm_title {
+    // Family names in ink, sub-categories in orange — the two levels have to
+    // be told apart at a glance, and the family is the heading.
+    //
+    // The selectors carry `a...:not(.btn)` for one reason: Odoo's colour
+    // combinations ship `.o_colored_level .o_cc1 a:not(.btn) {color:#a35c07}`,
+    // and the panel is an o_cc1 section. At (0,3,1) that beat a plain
+    // `.s_tecas_products_menu .s_tecas_pm_title` at (0,2,0), which is why
+    // every entry rendered in the theme's brown-orange however this file was
+    // written. Matching its specificity is enough — this module's css is
+    // emitted after the theme's in the bundle, so the tie falls our way. No
+    // !important needed, and none wanted: the client must still be able to
+    // restyle the panel from the editor.
+    a.s_tecas_pm_title:not(.btn) {
         display: block;
         margin-bottom: 0.6rem;
         padding-bottom: 0.5rem;
@@ -105,13 +111,17 @@ header #top_menu .dropdown-menu {
         display: flex;
         flex-direction: column;
 
-        // Four sub-categories, then scroll. A family is free to grow without
-        // dragging the panel down the page with it; the fifth entry is left
-        // half-visible under the fold, which is what tells the reader to
-        // scroll at all. Not applied in the mobile drawer below, where the
-        // drawer already scrolls and a list inside it would trap the gesture.
+        // Nothing scrolls: no family carries more than four sub-categories
+        // now, and the client has to see the whole catalogue at a glance. The
+        // cap is set at six lines rather than four so a label that wraps onto
+        // a second line — "Coffrets de Commande Pré-câblés" does — still fits
+        // with room to spare. It stays only as a guard: a family that grew to
+        // eight entries would otherwise drag the panel off the bottom of the
+        // screen, where a menu cannot be dismissed by moving the mouse off it.
+        // Not applied in the mobile drawer below, where the drawer already
+        // scrolls and a list inside it would trap the gesture.
         @media (min-width: 992px) {
-            max-height: calc(var(--tecas-pm-line) * 4.4);
+            max-height: calc(var(--tecas-pm-line) * 6);
             overflow-y: auto;
             // Keeps the labels clear of the scrollbar without indenting the
             // families that are short enough not to have one.
@@ -129,9 +139,9 @@ header #top_menu .dropdown-menu {
         }
     }
 
-    .s_tecas_pm_link {
+    a.s_tecas_pm_link:not(.btn) {
         padding: 0.32rem 0;
-        color: var(--tecas-ink);
+        color: var(--tecas-orange);
         font-size: 0.95rem;
         line-height: 1.35;
         text-decoration: none;
@@ -142,7 +152,9 @@ header #top_menu .dropdown-menu {
         &:hover,
         &:focus {
             padding-left: 0.35rem;
-            color: var(--tecas-blue);
+            // Deepened rather than switched: a link that changes hue on hover
+            // reads as a different link.
+            color: color-mix(in srgb, var(--tecas-orange) 78%, #000);
         }
     }
 
@@ -158,7 +170,7 @@ header #top_menu .dropdown-menu {
         text-align: right;
     }
 
-    .s_tecas_pm_all {
+    a.s_tecas_pm_all:not(.btn) {
         color: var(--tecas-ink);
         font-size: 0.95rem;
         font-weight: 600;
