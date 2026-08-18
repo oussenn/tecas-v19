@@ -1,6 +1,6 @@
 {
     "name": "TECAS - Product Web Extras & Variant Shop",
-    "version": "19.0.2.0.0",
+    "version": "19.0.3.0.0",
     "summary": "Per-variant web description, datasheet and gallery, plus one shop tile per variant.",
     "description": """
 Two halves of the same job — presenting variants properly on the website.

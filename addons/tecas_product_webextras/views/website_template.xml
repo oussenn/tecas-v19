@@ -72,4 +72,11 @@
     </xpath>
   </template>
 
+  <!-- The gallery above renders /web/image/<attachment id>, which the visitor's
+       browser fetches on its own account. Those attachments have to be public
+       or Odoo answers with its grey placeholder, so every gallery already in
+       the database is published here — on install and on every upgrade.
+       New ones are handled as they are attached, in models/product_template.py. -->
+  <function model="product.template" name="_webx_publish_galleries"/>
+
 </odoo>

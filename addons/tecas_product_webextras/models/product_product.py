@@ -2,6 +2,8 @@ from odoo import api, fields, models
 from odoo.http import request
 from odoo.tools import is_html_empty
 
+from .product_template import publish_gallery
+
 
 class ProductProduct(models.Model):
     """Per-variant web extras, plus the helpers that let a variant stand in for a
@@ -97,11 +99,26 @@ class ProductProduct(models.Model):
                 variant.webx_tech_sheet_url = False
             variant.webx_tech_sheet_filename = filename or 'fiche-technique.pdf'
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        publish_gallery(records.variant_gallery_attachment_ids)
+        return records
+
+    def write(self, vals):
+        result = super().write(vals)
+        if 'variant_gallery_attachment_ids' in vals:
+            publish_gallery(self.variant_gallery_attachment_ids)
+        return result
+
     def _webx_gallery(self):
         """Resolved gallery: the variant's images, else the product's.
 
         A method rather than a computed Many2many because it returns
-        ir.attachment records the public user has no ACL for.
+        ir.attachment records the public user has no ACL for. Reading them here
+        is done under sudo; being SEEN is a separate matter, handled by
+        publish_gallery() when the images are attached — the browser fetches
+        each one itself, and that request is checked on its own.
         """
         self.ensure_one()
         variant_sudo = self.sudo()
