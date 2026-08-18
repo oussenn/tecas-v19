@@ -18,15 +18,24 @@ from .tecas_autosync import _has_published_product, _relevant_categories
 # Matched on name rather than id so the order survives a category being
 # recreated, and so it reads as a rule instead of a row of magic numbers.
 HOMEPAGE_FAMILIES = (
+    # The five the client asked for by name, plus pumping and lighting — the
+    # two most searched in Morocco. Those seven come first because there are
+    # more qualifying families than there are slots: when lighting was
+    # published the grid had eight candidates for seven places, and with the
+    # client's own families lower down the list it was Accessoires Solaires
+    # that fell off. Priority is the order, so the named five cannot be
+    # displaced by a family nobody asked for.
     'Panneaux Solaire',
     'Onduleurs Solaires',
     'Batteries Solaires',
     'Pompage Solaire',
+    'Éclairage Solaire',
+    'Coffrets & Protections Électriques',
+    'Accessoires Solaires',
+    # Fill-ins, in the order they should take a slot the seven above leave
+    # empty — which is what they do while pumping has nothing published.
     'Câbles Électriques & Solaires',
     'Structures & Fixations Solaires',
-    'Coffrets & Protections Électriques',
-    'Éclairage Solaire',
-    'Accessoires Solaires',
 )
 
 

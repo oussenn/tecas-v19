@@ -218,6 +218,33 @@ FAMILIES = [
     },
 ]
 
+# Products sitting in a category they plainly do not belong to.
+#
+# "Câble Solaire" was the catalogue's only cable category for years, so every
+# kind of cable was piled into it — and with it a Teltonika EV wall box, whose
+# name happens to contain "avec câble 5m". Now that the client's sub-families
+# exist, the obvious ones move down into them: it is what makes those
+# sub-categories real rather than empty shells, and it stops an EV charger
+# being the photo the site shows for "Câbles Souples".
+#
+# Names are matched WHOLE (after norm()), never as fragments, so a rule can
+# never sweep up a neighbour; `contains` is the exception, for the two Teltonika
+# references whose long names differ. Only unambiguous readings are listed —
+# "Câbles Torsadés aluminium" and the ARVFV armoured cable are left where they
+# are for the client to place.
+REFILE = [
+    {'to': 'Câbles U-1000 R2V', 'from': 'Câbles Solaires DC',
+     'names': ['Cable U1000 R2V']},
+    {'to': 'Câbles Immergés', 'from': 'Câbles Solaires DC',
+     'names': ['Cable Immergé']},
+    {'to': 'Câbles Souples', 'from': 'Câbles Solaires DC',
+     'names': ['Câble Souple']},
+    {'to': 'Accessoires de Câblage', 'from': 'Câbles Solaires DC',
+     'names': ['Chemain de Câble']},
+    {'to': 'Bornes de Recharge', 'from': 'Câbles Solaires DC',
+     'contains': ['teltocharge']},
+]
+
 # Categories the client keeps in the catalogue but does not want on the site.
 # Only ever set here — never cleared, so a category hidden by hand from the
 # backend stays hidden.
@@ -404,6 +431,25 @@ for family_spec in FAMILIES:
                     nested.write({'parent_id': child.id})
                     report.append('"%s" (%s) moved under "%s"'
                                   % (nested.name, nested.id, child.name))
+
+for spec in REFILE:
+    target = (index.get(norm(spec['to'])) or [None])[0]
+    source = (index.get(norm(spec['from'])) or [None])[0]
+    if not target or not source:
+        report.append('REFILE skipped: "%s" or "%s" is missing'
+                      % (spec['to'], spec['from']))
+        continue
+    products = Product.with_context(active_test=False).search(
+        [('public_categ_ids', 'in', source.id)])
+    for product in products:
+        name = norm(product.name)
+        matched = (name in [norm(n) for n in spec.get('names', [])]
+                   or any(fragment.upper() in name for fragment in spec.get('contains', [])))
+        if not matched:
+            continue
+        product.write({'public_categ_ids': [(4, target.id), (3, source.id)]})
+        report.append('"%s" (%s) moved from "%s" to "%s"'
+                      % (product.name, product.id, source.name, target.name))
 
 for old, new in RENAMES.items():
     for categ in index.get(norm(old), []):
