@@ -1058,34 +1058,25 @@
 
 // ------------------------------------------------- reviews / news carousel
 //
-// Both blocks are a Bootstrap row of col-lg-4 cards. Turning that row into a
-// horizontal scroller needs nothing but flex-wrap: the columns keep their
-// widths, so three cards show on a desktop and one on a phone, and the rest
-// scroll into view. The arrows are added by
-// static/src/js/carousel.js — see the note there on why this is built around
-// the stored markup rather than into it.
+// Both blocks are a Bootstrap row of col-lg-4 cards. Two states:
 //
-// The scroller itself is css, so the cards past the third stay reachable by
-// touch or trackpad even if the javascript never runs.
+//   * no javascript — the row is a plain horizontal scroller, so every card
+//     is still reachable by touch or trackpad;
+//   * carousel — static/src/js/carousel.js marks the frame ready, the
+//     container becomes the clipping viewport and the row is moved by
+//     transform, one card per click of an arrow, looping for ever.
+//
+// The container is the viewport rather than a wrapper the script inserts:
+// wrapping the row would mean moving it in the DOM, and these blocks live as
+// stored html in the page, where structural surgery at runtime is exactly what
+// must not happen.
 .s_tecas_reviews,
 .s_tecas_news {
     .row {
         flex-wrap: nowrap;
         overflow-x: auto;
-        scroll-behavior: smooth;
-        scroll-snap-type: x proximity;
-        // Room for the card shadow, which a clipping scroller would shave off.
+        // Room for the card shadow, which a clipping viewport would shave off.
         padding-bottom: 0.5rem;
-        // The arrows sit over the first and last card, so the track is inset
-        // by their width on desktop rather than letting them cover content.
-        scroll-padding-inline: 1rem;
-
-        > * {
-            scroll-snap-align: start;
-        }
-
-        // The native bar is redundant next to the arrows and coarse on Windows;
-        // a thin one still shows position without drawing attention.
         scrollbar-width: thin;
         scrollbar-color: color-mix(in srgb, var(--tecas-ink) 20%, #fff) transparent;
 
@@ -1098,22 +1089,33 @@
             background: color-mix(in srgb, var(--tecas-ink) 20%, #fff);
         }
     }
-
-    @media (prefers-reduced-motion: reduce) {
-        .row {
-            scroll-behavior: auto;
-        }
-    }
 }
 
-// The arrows are only laid out once js has marked the frame; until then they
-// do not exist at all, so nothing shifts on load.
 .s_tecas_carousel {
     position: relative;
 
+    // Carousel mode: the row no longer scrolls, it is driven by transform.
+    // A scrollbar under a pair of arrows is two controls for one job.
+    &.s_tecas_carousel_ready {
+        overflow: hidden;
+
+        > .row {
+            overflow: visible;
+            scrollbar-width: none;
+
+            &::-webkit-scrollbar {
+                display: none;
+            }
+        }
+    }
+
     .s_tecas_carousel_arrow {
         position: absolute;
-        top: calc(50% - 1.5rem);
+        // Overwritten in px by centreArrows(): the container carries the
+        // title and the Google badge as well as the cards, so a percentage
+        // would hang the arrows below the row. This is only what they use for
+        // the single frame before the first measure.
+        top: calc(50% - 1.375rem);
         z-index: 2;
         display: flex;
         align-items: center;
@@ -1128,45 +1130,22 @@
         color: var(--tecas-ink);
         font-size: 1.6rem;
         line-height: 1;
-        transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+        transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 
-        &:hover:not(:disabled) {
+        &:hover {
             background: var(--tecas-orange);
             border-color: var(--tecas-orange);
             color: #fff;
         }
-
-        // Disabled rather than hidden at the ends: a control that vanishes
-        // under the pointer makes the row feel broken.
-        &:disabled {
-            opacity: 0.35;
-            cursor: default;
-        }
     }
 
-    // Hidden entirely when the row fits — an arrow that cannot move is worse
-    // than no arrow. js adds the class only when there is overflow.
-    &:not(.s_tecas_carousel_active) .s_tecas_carousel_arrow {
-        display: none;
-    }
-
+    // Inside the viewport on both edges: the container clips its own overflow
+    // in carousel mode, so an arrow hung outside it would be cut in half.
     .s_tecas_carousel_prev {
-        left: -1.25rem;
+        left: 0.25rem;
     }
 
     .s_tecas_carousel_next {
-        right: -1.25rem;
-    }
-
-    // On a narrow screen there is no room outside the container, so the arrows
-    // come inside and sit over the cards.
-    @media (max-width: 1399.98px) {
-        .s_tecas_carousel_prev {
-            left: 0.25rem;
-        }
-
-        .s_tecas_carousel_next {
-            right: 0.25rem;
-        }
+        right: 0.25rem;
     }
 }
