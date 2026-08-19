@@ -395,37 +395,13 @@
         margin-bottom: 2rem;
     }
 
-    // Orange shapes sit behind the photo, so changing the photo in the
-    // editor cannot break the composition.
+    // The photo stands on its own. Two orange blocks used to sit behind it as
+    // decoration — they were drawn as ::before/::after rather than added to
+    // the page, so taking them out is this rule and nothing else: no markup
+    // changes, and the client's own photo is untouched. The inset that made
+    // room for them goes with them, so the image now fills its column.
     .s_tecas_kits_media {
-        position: relative;
-        padding: 1.5rem 0 1.5rem 1.5rem;
-
-        &::before,
-        &::after {
-            content: "";
-            position: absolute;
-            background: var(--tecas-orange);
-            z-index: 0;
-        }
-
-        &::before {
-            top: 0;
-            left: 0;
-            width: 38%;
-            height: 46%;
-        }
-
-        &::after {
-            right: 6%;
-            bottom: 0;
-            width: 42%;
-            height: 38%;
-        }
-
         img {
-            position: relative;
-            z-index: 1;
             display: block;
             width: 100%;
         }
