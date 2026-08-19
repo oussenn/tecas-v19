@@ -22,12 +22,22 @@ AUTO_SIG = 'data-tecas-sig'
 # Prefix on that fingerprint, so the way it is computed can change without
 # every existing block reading as hand-edited: a stamp that does not carry the
 # current prefix is treated as unstamped, adopted and stamped afresh.
-SIG_VERSION = 'v2'
-# arch_db is a translated column, and Odoo re-derives the other languages from
-# this one. The fingerprint is therefore only meaningful against the source:
-# read in fr_FR the same block hashes differently, which had the guard
-# reporting every block as hand-edited on a French site.
-SOURCE_LANG = 'en_US'
+SIG_VERSION = 'v3'
+# arch_db holds a COMPLETE, INDEPENDENT arch per language — it is jsonb keyed
+# by language, not a source plus a table of translated terms. Two consequences,
+# both learned the hard way:
+#
+#   * this site's default language is fr_FR, so everything the client changes in
+#     the website editor lands in arch_db->'fr_FR' and NOTHING lands in en_US;
+#   * writing one language's arch into the others therefore does not "keep them
+#     in step", it overwrites the client's work with a stale copy.
+#
+# That is exactly what this module used to do — read en_US, swap the auto
+# blocks, write the result to every language — and on 2026-08-19 it destroyed a
+# background image, a replaced photo, a corrected headline and a deleted
+# paragraph, none of which were in blocks this module owns. Every language is
+# now read, rewritten and saved on its own, and no language is ever written
+# from another's content.
 PRODUCTS_MENU_URL = '/shop'
 PRODUCTS_MENU_PARAM = 'tecas.products_menu_id'
 SHOP_LABEL = 'Toute la boutique'
@@ -93,6 +103,13 @@ def _relevant_categories(env):
 def _signature(node):
     """Fingerprint of what a section SAYS, not of how it is written down.
 
+    The section's OWN attributes are excluded: its class, its style and its
+    background are the client's to set from the editor, and counting them as
+    content had a perverse effect — dressing a block froze it, so a category
+    published later never reached the homepage. They are preserved on refresh
+    instead (see _replace_section), which is both safer and what someone
+    dropping a background on a block expects.
+
     Hashing the serialised xml was too brittle to be useful: an arch that is
     parsed and written back — by Odoo's own view handling, or by a script that
     reorders the blocks on a page — comes back with the same content spelled
@@ -105,7 +122,6 @@ def _signature(node):
     image or a link still does, which is the whole point.
     """
     clone = etree.fromstring(etree.tostring(node))
-    clone.attrib.pop(AUTO_SIG, None)
     parts = []
     for element in clone.iter():
         # Comments and processing instructions carry a callable as their tag,
@@ -114,12 +130,93 @@ def _signature(node):
         if not isinstance(element.tag, str):
             continue
         parts.append(element.tag)
-        parts.extend('%s=%s' % pair for pair in sorted(element.attrib.items()))
+        if element is not clone:
+            parts.extend('%s=%s' % pair for pair in sorted(element.attrib.items()))
         text = ' '.join((element.text or '').split())
         if text:
             parts.append(text)
     digest = hashlib.sha1('\x00'.join(parts).encode('utf-8')).hexdigest()[:16]
     return '%s:%s' % (SIG_VERSION, digest)
+
+
+def _replace_section(old, source):
+    """Build the section that replaces `old`, keeping what the client owns.
+
+    The module owns the INSIDE of an auto block — the tiles, the article
+    cards — and the client owns the block itself: its background, its padding,
+    the colour combination the editor put on it. So every attribute on the old
+    section is carried over, and its classes are merged on top of the
+    template's rather than replacing them. Losing that merge is what stripped
+    `oe_img_bg o_bg_img_center` off the categories block and left a background
+    image that the browser had no rule to paint.
+    """
+    new = etree.fromstring(etree.tostring(source))
+    template_classes = (new.get('class') or '').split()
+    for attr, value in old.attrib.items():
+        if attr == AUTO_SIG:
+            continue                    # recomputed over the finished node
+        if attr == 'class':
+            extra = [c for c in value.split() if c not in template_classes]
+            new.set('class', ' '.join(template_classes + extra))
+            continue
+        new.set(attr, value)            # style, data-*, whatever the editor added
+    new.set(AUTO_SIG, _signature(new))
+    new.tail = old.tail
+    return new
+
+
+def _refresh_auto_blocks_lang(env, lang, page_view_ids):
+    """Re-render the self-updating blocks in ONE language's copy of the pages.
+
+    Everything here — the render, the read, the write — happens in `lang` and
+    touches nothing else. That is the whole point: arch_db keeps a full arch
+    per language, the client edits the French one, and a refresh that reads one
+    language and writes another silently replaces their page with a stale copy.
+    """
+    env_lang = env(context=dict(env.context, lang=lang))
+
+    sources = {}
+    for section_class, template in AUTO_BLOCKS.items():
+        rendered = env_lang['ir.qweb'].sudo()._render(template)
+        source = etree.fromstring(('<root>%s</root>' % rendered).encode('utf-8')).find('section')
+        if source is None:
+            _logger.warning('tecas: %s rendered no <section>, skipping it', template)
+            continue
+        sources[section_class] = source
+    if not sources:
+        return 0
+
+    views = env_lang['ir.ui.view'].sudo().search([('id', 'in', page_view_ids)])
+    touched = 0
+    for view in views:
+        arch = view.arch_db
+        if not arch or AUTO_FLAG not in arch:
+            continue                        # hand-edited copy: leave it alone
+        root = etree.fromstring(arch.encode('utf-8'))
+        replaced = False
+        for section_class, source in sources.items():
+            targets = root.xpath(
+                "//section[contains(@class,'%s')][@%s='1']" % (section_class, AUTO_FLAG))
+            for old in targets:
+                stamped = old.get(AUTO_SIG) or ''
+                # A stamp from an older scheme says nothing about whether the
+                # block was edited, so it is re-stamped rather than trusted.
+                if stamped.startswith(SIG_VERSION + ':') and stamped != _signature(old):
+                    _logger.info(
+                        'tecas: %s in view %s (%s) was edited by hand, leaving it alone',
+                        section_class, view.id, lang)
+                    continue
+                old.getparent().replace(old, _replace_section(old, source))
+                replaced = True
+        if not replaced:
+            continue
+
+        new_arch = etree.tostring(root, encoding='unicode')
+        if new_arch != arch:
+            view.write({'arch_db': new_arch})
+            touched += 1
+
+    return touched
 
 
 def _refresh_auto_blocks(env):
@@ -138,66 +235,15 @@ def _refresh_auto_blocks(env):
     photo, a reworded title — which is exactly what was happening: the
     data-tecas-auto marker survives an in-place edit in the website editor, so
     it could never have detected one.
+
+    Done once per language, over that language's own arch — see the note on
+    SIG_VERSION for what anything else costs.
     """
     page_view_ids = env['website.page'].sudo().search([]).view_id.ids
     if not page_view_ids:
         return 0
-
-    sources = {}
-    for section_class, template in AUTO_BLOCKS.items():
-        rendered = env['ir.qweb'].sudo()._render(template)
-        source = etree.fromstring(('<root>%s</root>' % rendered).encode('utf-8')).find('section')
-        if source is None:
-            _logger.warning('tecas: %s rendered no <section>, skipping it', template)
-            continue
-        sources[section_class] = source
-    if not sources:
-        return 0
-
-    # Read in the source language, always: see SOURCE_LANG.
-    views = env['ir.ui.view'].sudo().with_context(lang=SOURCE_LANG).search(
-        [('id', 'in', page_view_ids)])
-    touched = 0
-    for view in views:
-        arch = view.arch_db
-        if AUTO_FLAG not in arch:
-            continue                        # hand-edited copy: leave it alone
-        root = etree.fromstring(arch.encode('utf-8'))
-        replaced = False
-        for section_class, source in sources.items():
-            targets = root.xpath(
-                "//section[contains(@class,'%s')][@%s='1']" % (section_class, AUTO_FLAG))
-            for old in targets:
-                stamped = old.get(AUTO_SIG) or ''
-                # A stamp from an older scheme says nothing about whether the
-                # block was edited, so it is re-stamped rather than trusted.
-                if stamped.startswith(SIG_VERSION + ':') and stamped != _signature(old):
-                    _logger.info(
-                        'tecas: %s in view %s was edited by hand, leaving it alone',
-                        section_class, view.id)
-                    continue
-                new = etree.fromstring(etree.tostring(source))
-                # Preserve whatever the editor put on the node (data-snippet,
-                # data-name, and any class the client added from the builder).
-                for attr, value in old.attrib.items():
-                    if attr not in ('class', AUTO_SIG):
-                        new.set(attr, value)
-                # Stamped last, over the finished node, so the hash covers
-                # exactly the html that ends up on the page.
-                new.set(AUTO_SIG, _signature(new))
-                new.tail = old.tail
-                old.getparent().replace(old, new)
-                replaced = True
-        if not replaced:
-            continue
-
-        new_arch = etree.tostring(root, encoding='unicode')
-        if new_arch != arch:
-            for lang in set(_installed_langs(env)) | {SOURCE_LANG}:
-                view.with_context(lang=lang).write({'arch_db': new_arch})
-            touched += 1
-
-    return touched
+    return sum(_refresh_auto_blocks_lang(env, lang, page_view_ids)
+               for lang in _installed_langs(env))
 
 
 def _menu_groups(env):
