@@ -177,17 +177,28 @@
 // A reassurance band, not a feature grid: no cards, no rules, left-aligned so
 // the four claims read as a line of copy rather than four boxes competing for
 // attention.
+// Scaled up on the client's instruction: this band is the site's proof, and at
+// 52px icons under 1rem type it read as a footnote under the hero rather than
+// as the four things TECAS wants a visitor to take away.
+//
+// Sized in css alone, not in the template. The block is stored html in the
+// page — see models/tecas_autosync.py — so a template edit would never reach
+// the homepage copy, while these class names are right there in it. It also
+// means nothing in the page is rewritten, so anything the client has changed
+// inside the block survives.
 .s_tecas_engagements {
     .s_tecas_eng_item {
-        padding-top: 1.25rem;
-        padding-bottom: 1.25rem;
+        padding-top: 2rem;
+        padding-bottom: 2rem;
     }
 
     .s_tecas_eng_icon svg {
-        width: 52px;
-        height: 52px;
+        // Nearly double. The artwork is a viewBox with no intrinsic size, so
+        // it scales cleanly to whatever it is given.
+        width: 92px;
+        height: 92px;
         display: block;
-        margin: 0 0 1rem;
+        margin: 0 0 1.35rem;
     }
 
     // Icon colours ride the same tokens as the type. The client's artwork is
@@ -204,13 +215,34 @@
 
     .s_tecas_eng_label {
         color: var(--tecas-ink);
-        font-weight: 500;
-        font-size: 1rem;
-        line-height: 1.5;
+        font-weight: 600;
+        font-size: 1.2rem;
+        line-height: 1.45;
         // Keeps each claim to roughly two lines, as in the approved design,
-        // instead of one long line on a wide screen.
-        max-width: 15rem;
+        // instead of one long line on a wide screen. Widened with the type so
+        // the longer claims still break in two rather than three.
+        max-width: 17.5rem;
         margin-bottom: 0;
+    }
+
+    // Two items to a row below lg and a claim beside each icon: the desktop
+    // sizes would leave the longer ones stacked five lines deep on a phone.
+    @media (max-width: 767.98px) {
+        .s_tecas_eng_item {
+            padding-top: 1.4rem;
+            padding-bottom: 1.4rem;
+        }
+
+        .s_tecas_eng_icon svg {
+            width: 66px;
+            height: 66px;
+            margin-bottom: 1rem;
+        }
+
+        .s_tecas_eng_label {
+            font-size: 1.05rem;
+            max-width: 100%;
+        }
     }
 }
 
