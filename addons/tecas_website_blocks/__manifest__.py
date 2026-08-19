@@ -15,7 +15,7 @@ button to the corner of every page, and the SCSS files dress the top menu
 (header), shrink the sub-category strip on category pages (shop) and place the
 floating button (floating).
 """,
-    'version': '19.0.37.0.0',
+    'version': '19.0.38.0.0',
     'depends': ['website', 'website_sale', 'website_blog'],
     'data': [
         'views/snippets/s_tecas_hero.xml',
@@ -44,6 +44,7 @@ floating button (floating).
             'tecas_website_blocks/static/src/scss/header.scss',
             'tecas_website_blocks/static/src/scss/shop.scss',
             'tecas_website_blocks/static/src/scss/floating.scss',
+            'tecas_website_blocks/static/src/scss/contact.scss',
             'tecas_website_blocks/static/src/js/carousel.js',
         ],
     },

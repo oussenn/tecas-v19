@@ -1,0 +1,153 @@
+// The contact page.
+//
+// Its markup is written into the page record by
+// scripts/rebuild_contact_page.py — the page belongs to the client and stays
+// editable in the website editor, so only the dressing lives here. Classes are
+// prefixed s_tecas_ct_ so an editor session cannot collide with them.
+
+.s_tecas_ct_head {
+    background: color-mix(in srgb, var(--tecas-ink) 6%, #fff);
+
+    .s_tecas_ct_title {
+        color: var(--tecas-ink);
+        font-weight: 800;
+        letter-spacing: -0.01em;
+    }
+
+    // The breadcrumb says where the visitor is without pretending to be a
+    // heading; it is deliberately quiet.
+    .s_tecas_ct_crumb {
+        margin: 0;
+        color: color-mix(in srgb, var(--tecas-ink) 55%, #fff);
+        font-size: 0.95rem;
+
+        a {
+            color: inherit;
+            text-decoration: none;
+
+            &:hover {
+                color: var(--tecas-orange);
+            }
+        }
+
+        strong {
+            color: var(--tecas-ink);
+            font-weight: 600;
+        }
+    }
+}
+
+.s_tecas_ct_lead {
+    color: var(--tecas-ink);
+    font-weight: 800;
+    line-height: 1.15;
+    font-size: clamp(1.7rem, 2.6vw, 2.4rem);
+
+    // The second line is the same sentence, said softer — it carries the
+    // promise ("gratuit et personnalisé") without competing with the ask.
+    span {
+        display: block;
+        color: color-mix(in srgb, var(--tecas-ink) 42%, #fff);
+        font-weight: 700;
+    }
+}
+
+.s_tecas_ct_item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+
+    .s_tecas_ct_icon {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        // A tint of the brand orange rather than the orange itself: four solid
+        // discs down the page would shout louder than the form beside them.
+        background: color-mix(in srgb, var(--tecas-orange) 14%, #fff);
+        color: var(--tecas-orange);
+        font-size: 22px;
+    }
+
+    .s_tecas_ct_label {
+        margin: 0 0 0.15rem;
+        color: var(--tecas-ink);
+        font-weight: 700;
+    }
+
+    .s_tecas_ct_value {
+        margin: 0;
+        color: color-mix(in srgb, var(--tecas-ink) 72%, #fff);
+        line-height: 1.5;
+
+        a {
+            color: inherit;
+            text-decoration: none;
+
+            &:hover {
+                color: var(--tecas-orange);
+            }
+        }
+    }
+}
+
+// The form sits on a card so it reads as one task, separate from the details
+// beside it.
+.s_tecas_ct_card {
+    background: color-mix(in srgb, var(--tecas-ink) 5%, #fff);
+    border-radius: 18px;
+    padding: clamp(1.25rem, 3vw, 2.5rem);
+
+    // The labels are hidden (d-none) and the placeholders carry the names, so
+    // the inputs have to be tall enough to read as fields on their own.
+    .form-control,
+    .form-select {
+        padding: 0.85rem 1rem;
+        border: 1px solid color-mix(in srgb, var(--tecas-ink) 14%, #fff);
+        border-radius: 10px;
+        background: #fff;
+        font-size: 1rem;
+
+        &:focus {
+            border-color: var(--tecas-orange);
+            box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--tecas-orange) 22%, transparent);
+        }
+
+        &::placeholder {
+            color: color-mix(in srgb, var(--tecas-ink) 45%, #fff);
+        }
+    }
+
+    // Odoo's form snippet lays every field out as a label column plus an input
+    // column. With the labels hidden the input column must take the whole row,
+    // or each field keeps a 200px indent that is no longer holding anything.
+    .s_website_form_label.d-none + .col-sm,
+    .s_website_form_field > .row > .col-sm {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    #s_website_form_result {
+        display: block;
+        margin-top: 0.75rem;
+    }
+}
+
+.s_tecas_ct_map {
+    iframe {
+        display: block;
+        width: 100%;
+        height: 420px;
+        border: 0;
+        border-radius: 18px;
+    }
+
+    @media (max-width: 767.98px) {
+        iframe {
+            height: 300px;
+        }
+    }
+}
