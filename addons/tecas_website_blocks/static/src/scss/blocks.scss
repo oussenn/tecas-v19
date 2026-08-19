@@ -901,17 +901,24 @@
         height: 100%;
         display: flex;
         flex-direction: column;
-        padding: 1.75rem 1.5rem 1.4rem;
-        border: 1px solid color-mix(in srgb, var(--tecas-ink) 9%, #fff);
-        border-radius: 16px;
-        background: #fff;
+        padding: 2.1rem 1.9rem 1.7rem;
+        border: 1px solid color-mix(in srgb, var(--tecas-orange) 22%, #fff);
+        border-radius: 18px;
+        // A warm tint rather than white: white cards on a white page are only
+        // told apart by their hairline border, which is why this section read
+        // as filler. The tint is mixed from the brand orange — the same colour
+        // as the stars sitting on it — so the block warms up without adding a
+        // colour the site does not already use, and stays distinct from the
+        // grey band further up the page.
+        background: color-mix(in srgb, var(--tecas-orange) 7%, #fff);
+        box-shadow: 0 8px 22px color-mix(in srgb, var(--tecas-ink) 7%, transparent);
         text-align: center;
     }
 
     .s_tecas_review_stars {
-        margin-bottom: 0.9rem;
+        margin-bottom: 1rem;
         color: var(--tecas-orange);
-        font-size: 0.95rem;
+        font-size: 1.15rem;
         letter-spacing: 0.15em;
     }
 
@@ -919,16 +926,21 @@
         // The quote is the card: it takes the free space so every author line
         // sits on the same baseline whatever the length above it.
         flex: 1 1 auto;
-        margin-bottom: 1.1rem;
+        margin-bottom: 1.2rem;
         color: var(--tecas-ink);
-        font-size: 1rem;
-        line-height: 1.6;
+        // Set larger than body copy, because this IS the message — a customer
+        // saying it worked. Clamped rather than fixed so the long quotes do
+        // not run to six lines on a narrow column.
+        font-size: clamp(1.05rem, 1.15vw, 1.2rem);
+        font-weight: 500;
+        line-height: 1.65;
     }
 
     .s_tecas_review_author {
         margin: 0;
-        color: color-mix(in srgb, var(--tecas-ink) 70%, #fff);
-        font-size: 0.95rem;
+        color: color-mix(in srgb, var(--tecas-ink) 78%, #fff);
+        font-size: 1rem;
+        font-weight: 600;
     }
 }
 
@@ -1099,7 +1111,10 @@
         flex-wrap: nowrap;
         overflow-x: auto;
         // Room for the card shadow, which a clipping viewport would shave off.
-        padding-bottom: 0.5rem;
+        // The review cards cast 0 8px 22px, so the shadow reaches ~30px below
+        // the card and this has to clear it — at the old 0.5rem the bottom of
+        // every card ended in a hard cut line.
+        padding-bottom: 2rem;
         scrollbar-width: thin;
         scrollbar-color: color-mix(in srgb, var(--tecas-ink) 20%, #fff) transparent;
 
