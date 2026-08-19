@@ -7,6 +7,30 @@ from odoo.addons.website_sale.controllers.main import TableCompute, WebsiteSale
 class WebsiteSaleVariants(WebsiteSale):
 
     @http.route()
+    def product(self, product, category=None, pricelist=None, **kwargs):
+        """Send a retired product's page to the family that replaced it.
+
+        An archived product still answers on its old URL: the record rule only
+        asks whether it is published, and archiving does not unpublish. So the
+        page rendered — with no variant behind it, no price, and nothing to
+        buy — and that is what Google was serving as the first result for
+        "panneau solaire jinko 590w prix maroc".
+
+        A 301 rather than a 404 because the page has earned its ranking: it
+        keeps the visitor, and it tells Google the page moved instead of
+        letting it drop. Unpublishing these products would look tidier and
+        would do the opposite — the record would stop being readable, this
+        controller would never run, and every one of those links would end in
+        a 404.
+
+        Only archived products are diverted. A live product with no variant
+        renders as it always did.
+        """
+        if not product.sudo().active:
+            return request.redirect(product.sudo()._webx_replacement_url(), code=301)
+        return super().product(product, category=category, pricelist=pricelist, **kwargs)
+
+    @http.route()
     def shop(self, page=0, category=None, search='', min_price=0.0, max_price=0.0, tags='', **post):
         """Render one tile per variant instead of one per template.
 

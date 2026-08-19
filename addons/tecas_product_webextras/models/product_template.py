@@ -123,3 +123,28 @@ class ProductTemplate(models.Model):
                 ],
             })
         return info
+
+    def _webx_replacement_url(self):
+        """Where a visitor should land when this product's page is gone.
+
+        A retired product keeps its URL for years — Google's index, other
+        sites' links, someone's bookmark. Sending all of that to a 404 throws
+        away the ranking the page earned; sending it to the family that now
+        sells the same thing keeps the visitor AND tells Google where the page
+        moved.
+
+        The nearest category that still has something published wins, walking
+        up from the product's own categories so a retired panel lands on
+        "Panneaux Solaire" rather than on an empty sub-family. The test is
+        the shop's own has_published_products, so a category this returns is a
+        page that answers 200 — never a redirect into a second dead end.
+        """
+        self.ensure_one()
+        slug = self.env['ir.http']._slug
+        for categ in self.sudo().public_categ_ids:
+            node = categ
+            while node:
+                if node.has_published_products:
+                    return '/shop/category/%s' % slug(node)
+                node = node.parent_id
+        return '/shop'

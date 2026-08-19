@@ -119,7 +119,16 @@ class ProductProduct(models.Model):
         is done under sudo; being SEEN is a separate matter, handled by
         publish_gallery() when the images are attached — the browser fetches
         each one itself, and that request is checked on its own.
+
+        Called on NOTHING it answers nothing, rather than raising. The product
+        page hands it `product_variant`, which is empty for a template whose
+        variants have all been archived — and an "Expected singleton" from a
+        template attribute is a 500 on the whole page, not a missing gallery.
+        That is what /shop/p-30 was serving to everyone who reached it from
+        Google.
         """
+        if not self:
+            return self.env['ir.attachment'].browse()
         self.ensure_one()
         variant_sudo = self.sudo()
         return (
