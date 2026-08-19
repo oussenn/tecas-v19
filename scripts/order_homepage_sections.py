@@ -23,10 +23,11 @@ DRY_RUN = os.environ.get('TECAS_DRY') == '1'
 
 # {block to move: block it must sit directly underneath}
 ORDER = {
-    # The brands strip belonged to the hero, above the catalogue. The client
-    # wants it read as "and here is what those categories are made of", which
-    # only works below them.
-    's_tecas_brands': 's_tecas_categories',
+    # The brands strip started under the hero, went below the categories, and
+    # now sits under the engagements band ("+500 installations réalisées au
+    # Maroc"): the claims and the names behind them read as one piece of
+    # reassurance, so they belong together rather than split by the catalogue.
+    's_tecas_brands': 's_tecas_engagements',
 }
 
 View = env['ir.ui.view'].sudo()

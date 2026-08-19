@@ -23,6 +23,11 @@ AUTO_SIG = 'data-tecas-sig'
 # every existing block reading as hand-edited: a stamp that does not carry the
 # current prefix is treated as unstamped, adopted and stamped afresh.
 SIG_VERSION = 'v2'
+# arch_db is a translated column, and Odoo re-derives the other languages from
+# this one. The fingerprint is therefore only meaningful against the source:
+# read in fr_FR the same block hashes differently, which had the guard
+# reporting every block as hand-edited on a French site.
+SOURCE_LANG = 'en_US'
 PRODUCTS_MENU_URL = '/shop'
 PRODUCTS_MENU_PARAM = 'tecas.products_menu_id'
 SHOP_LABEL = 'Toute la boutique'
@@ -103,7 +108,12 @@ def _signature(node):
     clone.attrib.pop(AUTO_SIG, None)
     parts = []
     for element in clone.iter():
-        parts.append(str(element.tag))
+        # Comments and processing instructions carry a callable as their tag,
+        # and its repr holds a memory address — different in every process, so
+        # a block with a comment in it would never match its own stamp again.
+        if not isinstance(element.tag, str):
+            continue
+        parts.append(element.tag)
         parts.extend('%s=%s' % pair for pair in sorted(element.attrib.items()))
         text = ' '.join((element.text or '').split())
         if text:
@@ -144,7 +154,9 @@ def _refresh_auto_blocks(env):
     if not sources:
         return 0
 
-    views = env['ir.ui.view'].sudo().search([('id', 'in', page_view_ids)])
+    # Read in the source language, always: see SOURCE_LANG.
+    views = env['ir.ui.view'].sudo().with_context(lang=SOURCE_LANG).search(
+        [('id', 'in', page_view_ids)])
     touched = 0
     for view in views:
         arch = view.arch_db
@@ -181,7 +193,7 @@ def _refresh_auto_blocks(env):
 
         new_arch = etree.tostring(root, encoding='unicode')
         if new_arch != arch:
-            for lang in set(_installed_langs(env)):
+            for lang in set(_installed_langs(env)) | {SOURCE_LANG}:
                 view.with_context(lang=lang).write({'arch_db': new_arch})
             touched += 1
 
