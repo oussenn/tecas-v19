@@ -19,6 +19,10 @@ AUTO_FLAG = 'data-tecas-auto'
 # Fingerprint of the html this module last wrote into a block. It is what tells
 # an untouched block from one the client has edited: see _signature().
 AUTO_SIG = 'data-tecas-sig'
+# Prefix on that fingerprint, so the way it is computed can change without
+# every existing block reading as hand-edited: a stamp that does not carry the
+# current prefix is treated as unstamped, adopted and stamped afresh.
+SIG_VERSION = 'v2'
 PRODUCTS_MENU_URL = '/shop'
 PRODUCTS_MENU_PARAM = 'tecas.products_menu_id'
 SHOP_LABEL = 'Toute la boutique'
@@ -82,11 +86,30 @@ def _relevant_categories(env):
 
 
 def _signature(node):
-    """Fingerprint of a section, ignoring the fingerprint itself."""
+    """Fingerprint of what a section SAYS, not of how it is written down.
+
+    Hashing the serialised xml was too brittle to be useful: an arch that is
+    parsed and written back — by Odoo's own view handling, or by a script that
+    reorders the blocks on a page — comes back with the same content spelled
+    differently, and the block then read as hand-edited and froze for good. It
+    is a safe failure, in that nothing is destroyed, but it quietly turns off
+    the self-updating that these blocks exist for.
+
+    So the hash covers the tags, their attributes sorted, and the text with its
+    whitespace collapsed. Reformatting cannot move it; changing a word, an
+    image or a link still does, which is the whole point.
+    """
     clone = etree.fromstring(etree.tostring(node))
     clone.attrib.pop(AUTO_SIG, None)
-    clone.tail = None
-    return hashlib.sha1(etree.tostring(clone)).hexdigest()[:16]
+    parts = []
+    for element in clone.iter():
+        parts.append(str(element.tag))
+        parts.extend('%s=%s' % pair for pair in sorted(element.attrib.items()))
+        text = ' '.join((element.text or '').split())
+        if text:
+            parts.append(text)
+    digest = hashlib.sha1('\x00'.join(parts).encode('utf-8')).hexdigest()[:16]
+    return '%s:%s' % (SIG_VERSION, digest)
 
 
 def _refresh_auto_blocks(env):
@@ -133,8 +156,10 @@ def _refresh_auto_blocks(env):
             targets = root.xpath(
                 "//section[contains(@class,'%s')][@%s='1']" % (section_class, AUTO_FLAG))
             for old in targets:
-                stamped = old.get(AUTO_SIG)
-                if stamped and stamped != _signature(old):
+                stamped = old.get(AUTO_SIG) or ''
+                # A stamp from an older scheme says nothing about whether the
+                # block was edited, so it is re-stamped rather than trusted.
+                if stamped.startswith(SIG_VERSION + ':') and stamped != _signature(old):
                     _logger.info(
                         'tecas: %s in view %s was edited by hand, leaving it alone',
                         section_class, view.id)
