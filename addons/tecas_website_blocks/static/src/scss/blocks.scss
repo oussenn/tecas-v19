@@ -792,8 +792,15 @@
         margin: 0;
     }
 
+    // Both link columns — "Liens utiles" and "Nos produits" — carry this
+    // class. Set explicitly because the theme's body size is 1.25rem, which
+    // left the links BIGGER than the column title above them (1.0625rem):
+    // a footer index read louder than its own heading, and long names like
+    // "Coffrets & protections électriques" wrapped onto two lines. The gap
+    // comes down with the type so the rhythm of the column is unchanged.
     .s_tecas_footer_list li {
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.65rem;
+        font-size: 1rem;
         line-height: 1.4;
     }
 
