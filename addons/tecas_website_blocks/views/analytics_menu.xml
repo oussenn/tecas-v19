@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!--
+    "Analyse > Google Analytics" in the backend.
+
+    Odoo's own Analytics page cannot show Google Analytics and never could in
+    this version: it embeds a PLAUSIBLE dashboard, and with no Plausible
+    account connected all it renders is a screenshot and an invitation to
+    connect one. Google's data lives in Google's console, so the honest thing
+    the menu can do is take you there in one click, from the same place you
+    went looking for it.
+
+    A link rather than an embed because Google Analytics refuses to be framed
+    (X-Frame-Options: SAMEORIGIN on the whole console), so no amount of iframe
+    work would put that dashboard inside Odoo.
+-->
+<record id="action_tecas_google_analytics" model="ir.actions.act_url">
+    <field name="name">Google Analytics</field>
+    <field name="url">https://analytics.google.com/analytics/web/</field>
+    <field name="target">new</field>
+</record>
+
+<menuitem id="menu_tecas_google_analytics"
+          name="Google Analytics"
+          parent="website.menu_reporting"
+          action="action_tecas_google_analytics"
+          groups="website.group_website_designer"
+          sequence="15"/>
+
+</odoo>

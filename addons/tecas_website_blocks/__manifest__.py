@@ -15,7 +15,7 @@ button to the corner of every page, and the SCSS files dress the top menu
 (header), shrink the sub-category strip on category pages (shop) and place the
 floating button (floating).
 """,
-    'version': '19.0.44.0.0',
+    'version': '19.0.45.0.0',
     'depends': ['website', 'website_sale', 'website_blog'],
     'data': [
         'views/snippets/s_tecas_hero.xml',
@@ -34,6 +34,7 @@ floating button (floating).
         'views/snippets/snippets.xml',
         'views/products_menu.xml',
         'views/whatsapp_float.xml',
+        'views/analytics_menu.xml',
         'views/shop_filters.xml',
         'views/shop_filmstrip.xml',
         'views/shop_prices_login.xml',
