@@ -187,6 +187,21 @@
 // means nothing in the page is rewritten, so anything the client has changed
 // inside the block survives.
 .s_tecas_engagements {
+    // The claims sit on a soft grey card rather than on the page, which is
+    // what sets them apart from the sections above and below without adding a
+    // heading or a rule.
+    //
+    // The colour is mixed from the ink token instead of being a fixed grey, so
+    // it stays related to the palette: change --tecas-ink and this follows.
+    // It goes on the container, not the section, so the band is inset from the
+    // page edges and can carry rounded corners — a full-bleed grey would read
+    // as a change of page, not as a card.
+    > .container {
+        background: color-mix(in srgb, var(--tecas-ink) 6%, #fff);
+        border-radius: 18px;
+        padding-inline: clamp(1rem, 2.5vw, 2.5rem);
+    }
+
     .s_tecas_eng_item {
         padding-top: 2rem;
         padding-bottom: 2rem;
