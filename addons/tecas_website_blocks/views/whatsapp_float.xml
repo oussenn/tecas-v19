@@ -8,8 +8,8 @@
     for the one spot a visitor reads first; that spot now says "Contactez-Nous"
     and leads to the quote form (see scripts/header_contact_button.py). WhatsApp
     is a chat channel, so it belongs where a visitor already looks for one: a
-    round green button pinned to the bottom-left corner, beside the site's chat
-    bubble.
+    round green button sitting directly on top of the site's own chat bubble,
+    bottom right, the two of them making one column of ways to reach a human.
 
     It hangs outside #wrapwrap on purpose. Inside it, a page that creates a
     stacking context — any section with a transform, which the animated blocks

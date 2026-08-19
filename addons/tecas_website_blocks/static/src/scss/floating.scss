@@ -2,23 +2,34 @@
 // there at all rather than in the header.
 
 .tecas_wa_float {
+    // Stacked directly on top of the chat bubble, sharing its centre line, so
+    // the two read as one column of channels rather than two loose circles.
+    //
+    // Every number below is Odoo's, from mail/static/src/core/common/
+    // chat_hub{,_model}.js: the bubble column is parked at bottom
+    // BUBBLE_OUTER (10px) and right BUBBLE_OUTER + BUBBLE_START (25px), it is
+    // BUBBLE (56px) wide, and the button inside it is 50px, centred. That puts
+    // the bubble's centre 53px in from the right edge and its top edge 60px up
+    // from the bottom. They are named here so the arithmetic can be checked
+    // against that file if Odoo ever moves the bubble.
+    --tecas-wa-size: 50px;      // same as the bubble, so the stack is even
+    --tecas-wa-gap: 12px;       // air between the two buttons
+    --tecas-bot-centre: 53px;   // 25px + 56px / 2
+    --tecas-bot-top: 60px;      // 10px + 50px
+
     position: fixed;
-    // Bottom LEFT: Odoo's chat bubble starts bottom-right (see chat_hub.js,
-    // which sets bottom/right and leaves top/left unset), so the two channels
-    // sit one to a corner and neither covers the other. A visitor who has
-    // dragged the bubble across can drag it back — right-click gives it a
-    // "Reset initial position".
-    left: 18px;
-    bottom: 18px;
+    right: calc(var(--tecas-bot-centre) - var(--tecas-wa-size) / 2);
+    bottom: calc(var(--tecas-bot-top) + var(--tecas-wa-gap));
     // Above the page, below the chat widget: its root sets z-index to
-    // calc(9e999), so nothing here can bury it.
+    // calc(9e999), so an open chat window covers this button rather than
+    // fighting it, which is the right way round.
     z-index: 1035;
 
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 56px;
-    height: 56px;
+    width: var(--tecas-wa-size);
+    height: var(--tecas-wa-size);
     border-radius: 50%;
     // WhatsApp's own green, not the theme's: this button is recognised by its
     // colour before it is read, and a house-green version of it stops being a
@@ -30,7 +41,7 @@
     transition: transform 0.15s ease, box-shadow 0.15s ease;
 
     .fa {
-        font-size: 30px;
+        font-size: 27px;
         line-height: 1;
     }
 
@@ -52,15 +63,13 @@
     }
 }
 
+// On a phone Odoo lifts the bubble clear of the browser's own bottom bar and
+// pulls it in from the edge — .o-mail-ChatHub-bubbles.o-mobile adds
+// bottomLift 35px and margin-right bubblesMargin + 5px (15px). The stack
+// follows it rather than staying put and landing on top of it.
 @media (max-width: 575.98px) {
     .tecas_wa_float {
-        left: 14px;
-        bottom: 14px;
-        width: 50px;
-        height: 50px;
-
-        .fa {
-            font-size: 27px;
-        }
+        --tecas-bot-centre: 68px;   // 25px + 15px + 56px / 2
+        --tecas-bot-top: 95px;      // 10px + 35px + 50px
     }
 }
