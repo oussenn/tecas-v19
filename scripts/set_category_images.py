@@ -6,7 +6,8 @@
 TECAS_DRY=1  print the plan and roll back.
 TECAS_FORCE=1 replace pictures that are already set (otherwise they are left
               alone — a category the client has dressed by hand must survive a
-              re-run).
+              re-run). It still never touches a picture set by hand: that is
+              what tecas_image_is_auto records.
 
 The image goes on the category RECORD, not into the website module: the tiles,
 the sub-category strip and the shop's own listings all read
@@ -45,7 +46,8 @@ REDO_BORROWED = os.environ.get('TECAS_REDO_BORROWED') == '1'
 # and "Équipements de Nettoyage Solaire" too, which is worse than a blank.
 NO_BORROW = (
     'Stations Météo',
-    'Équipements de Nettoyage Solaire',
+    'Accessoires de Nettoyage',
+    'Équipements de Nettoyage Solaire',   # its name before 2026-08-18
     'Accessoires Techniques',
 )
 
@@ -120,19 +122,32 @@ own_pool = {categ.id: candidates(categ) for categ in categories}
 taken_under = {}
 
 if REDO_BORROWED:
-    stale = categories.filtered(lambda c: not own_pool[c.id] and c.image_1920)
+    # tecas_image_is_auto is the whole guard: only pictures this script chose
+    # are ever cleared. A picture the client uploaded — through the backend,
+    # an import, the website editor — clears that flag on its way in (see
+    # ProductPublicCategory.write) and is therefore untouchable here. Without
+    # it this line would wipe every hand-set image on a category that has no
+    # products of its own, which is most of the new ones.
+    stale = categories.filtered(
+        lambda c: not own_pool[c.id] and c.image_1920 and c.tecas_image_is_auto)
+    kept = categories.filtered(
+        lambda c: not own_pool[c.id] and c.image_1920 and not c.tecas_image_is_auto)
     # Cleared even on a dry run — the run ends in a rollback, and leaving the
     # old pictures in place would make the preview show "nothing to do" for
     # every category the redo is meant to revisit.
-    stale.write({'image_1920': False})
+    stale.with_context(tecas_auto_image=True).write({'image_1920': False})
     report.append('cleared %d borrowed picture(s) to pick them again: %s'
-                  % (len(stale), ', '.join(stale.mapped('name'))))
+                  % (len(stale), ', '.join(stale.mapped('name')) or '-'))
+    if kept:
+        report.append('left alone, picture set by hand: %s' % ', '.join(kept.mapped('name')))
 
 # Pass 1 — everything that can dress itself out of its own branch. Done first
 # so that pass 2 knows which photos are already spoken for.
 still_bare = Category.browse()
 for categ in categories:
-    if categ.image_1920 and not FORCE:
+    # FORCE replaces the script's own choices, never the client's: a picture
+    # someone uploaded is the one thing this script must never overwrite.
+    if categ.image_1920 and (not FORCE or not categ.tecas_image_is_auto):
         skipped.append(categ.name)
         continue
     pool = own_pool[categ.id]
@@ -144,7 +159,8 @@ for categ in categories:
     taken.add(product_id)
     product = Product.browse(product_id)
     if not DRY_RUN:
-        categ.write({'image_1920': product.image_1920})
+        categ.with_context(tecas_auto_image=True).write(
+            {'image_1920': product.image_1920, 'tecas_image_is_auto': True})
     report.append('"%s" (%s) <- %s (%s)' % (categ.name, categ.id, product.name, product.id))
 
 # Pass 2 — the empty ones borrow from the nearest branch above them.
@@ -166,7 +182,8 @@ for categ in still_bare:
     taken.add(product_id)
     product = Product.browse(product_id)
     if not DRY_RUN:
-        categ.write({'image_1920': product.image_1920})
+        categ.with_context(tecas_auto_image=True).write(
+            {'image_1920': product.image_1920, 'tecas_image_is_auto': True})
     report.append('"%s" (%s) <- %s (%s), borrowed from "%s"'
                   % (categ.name, categ.id, product.name, product.id, borrowed_from.name))
 

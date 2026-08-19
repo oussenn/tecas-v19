@@ -1055,3 +1055,118 @@
         }
     }
 }
+
+// ------------------------------------------------- reviews / news carousel
+//
+// Both blocks are a Bootstrap row of col-lg-4 cards. Turning that row into a
+// horizontal scroller needs nothing but flex-wrap: the columns keep their
+// widths, so three cards show on a desktop and one on a phone, and the rest
+// scroll into view. The arrows are added by
+// static/src/js/carousel.js — see the note there on why this is built around
+// the stored markup rather than into it.
+//
+// The scroller itself is css, so the cards past the third stay reachable by
+// touch or trackpad even if the javascript never runs.
+.s_tecas_reviews,
+.s_tecas_news {
+    .row {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        scroll-snap-type: x proximity;
+        // Room for the card shadow, which a clipping scroller would shave off.
+        padding-bottom: 0.5rem;
+        // The arrows sit over the first and last card, so the track is inset
+        // by their width on desktop rather than letting them cover content.
+        scroll-padding-inline: 1rem;
+
+        > * {
+            scroll-snap-align: start;
+        }
+
+        // The native bar is redundant next to the arrows and coarse on Windows;
+        // a thin one still shows position without drawing attention.
+        scrollbar-width: thin;
+        scrollbar-color: color-mix(in srgb, var(--tecas-ink) 20%, #fff) transparent;
+
+        &::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            border-radius: 2px;
+            background: color-mix(in srgb, var(--tecas-ink) 20%, #fff);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .row {
+            scroll-behavior: auto;
+        }
+    }
+}
+
+// The arrows are only laid out once js has marked the frame; until then they
+// do not exist at all, so nothing shifts on load.
+.s_tecas_carousel {
+    position: relative;
+
+    .s_tecas_carousel_arrow {
+        position: absolute;
+        top: calc(50% - 1.5rem);
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.75rem;
+        height: 2.75rem;
+        padding: 0;
+        border: 1px solid color-mix(in srgb, var(--tecas-ink) 12%, #fff);
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 6px 18px color-mix(in srgb, var(--tecas-ink) 18%, transparent);
+        color: var(--tecas-ink);
+        font-size: 1.6rem;
+        line-height: 1;
+        transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+
+        &:hover:not(:disabled) {
+            background: var(--tecas-orange);
+            border-color: var(--tecas-orange);
+            color: #fff;
+        }
+
+        // Disabled rather than hidden at the ends: a control that vanishes
+        // under the pointer makes the row feel broken.
+        &:disabled {
+            opacity: 0.35;
+            cursor: default;
+        }
+    }
+
+    // Hidden entirely when the row fits — an arrow that cannot move is worse
+    // than no arrow. js adds the class only when there is overflow.
+    &:not(.s_tecas_carousel_active) .s_tecas_carousel_arrow {
+        display: none;
+    }
+
+    .s_tecas_carousel_prev {
+        left: -1.25rem;
+    }
+
+    .s_tecas_carousel_next {
+        right: -1.25rem;
+    }
+
+    // On a narrow screen there is no room outside the container, so the arrows
+    // come inside and sit over the cards.
+    @media (max-width: 1399.98px) {
+        .s_tecas_carousel_prev {
+            left: 0.25rem;
+        }
+
+        .s_tecas_carousel_next {
+            right: 0.25rem;
+        }
+    }
+}

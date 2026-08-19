@@ -1,3 +1,4 @@
+import hashlib
 import logging
 
 from lxml import etree
@@ -15,6 +16,9 @@ AUTO_BLOCKS = {
 }
 PRODUCTS_MENU_TEMPLATE = 'tecas_website_blocks.s_tecas_products_menu'
 AUTO_FLAG = 'data-tecas-auto'
+# Fingerprint of the html this module last wrote into a block. It is what tells
+# an untouched block from one the client has edited: see _signature().
+AUTO_SIG = 'data-tecas-sig'
 PRODUCTS_MENU_URL = '/shop'
 PRODUCTS_MENU_PARAM = 'tecas.products_menu_id'
 SHOP_LABEL = 'Toute la boutique'
@@ -77,6 +81,14 @@ def _relevant_categories(env):
     ).filtered(lambda c: _is_browsable(env, c))
 
 
+def _signature(node):
+    """Fingerprint of a section, ignoring the fingerprint itself."""
+    clone = etree.fromstring(etree.tostring(node))
+    clone.attrib.pop(AUTO_SIG, None)
+    clone.tail = None
+    return hashlib.sha1(etree.tostring(clone)).hexdigest()[:16]
+
+
 def _refresh_auto_blocks(env):
     """Re-render every self-updating block into the PAGES that opted in.
 
@@ -84,6 +96,15 @@ def _refresh_auto_blocks(env):
     views also matches this module's own snippet templates, and rewriting one
     replaces its t-foreach with frozen html — which silently kills the block's
     dynamism for every future drop. Only pages are ever rewritten.
+
+    A block is only replaced while it still matches what this module last wrote
+    into it. The section carries the fingerprint of that html; if the section on
+    the page no longer hashes to it, somebody has edited the block by hand and
+    it is left alone for good. Without that check every restart quietly threw
+    away whatever the client had changed inside these sections — a swapped
+    photo, a reworded title — which is exactly what was happening: the
+    data-tecas-auto marker survives an in-place edit in the website editor, so
+    it could never have detected one.
     """
     page_view_ids = env['website.page'].sudo().search([]).view_id.ids
     if not page_view_ids:
@@ -112,12 +133,21 @@ def _refresh_auto_blocks(env):
             targets = root.xpath(
                 "//section[contains(@class,'%s')][@%s='1']" % (section_class, AUTO_FLAG))
             for old in targets:
+                stamped = old.get(AUTO_SIG)
+                if stamped and stamped != _signature(old):
+                    _logger.info(
+                        'tecas: %s in view %s was edited by hand, leaving it alone',
+                        section_class, view.id)
+                    continue
                 new = etree.fromstring(etree.tostring(source))
                 # Preserve whatever the editor put on the node (data-snippet,
                 # data-name, and any class the client added from the builder).
                 for attr, value in old.attrib.items():
-                    if attr != 'class':
+                    if attr not in ('class', AUTO_SIG):
                         new.set(attr, value)
+                # Stamped last, over the finished node, so the hash covers
+                # exactly the html that ends up on the page.
+                new.set(AUTO_SIG, _signature(new))
                 new.tail = old.tail
                 old.getparent().replace(old, new)
                 replaced = True
@@ -264,6 +294,12 @@ class ProductPublicCategory(models.Model):
     _TECAS_WATCHED = {'name', 'sequence', 'parent_id', 'image_1920', 'website_id',
                       'tecas_show_when_empty', 'tecas_hide_from_website'}
 
+    # Marks an image as the script's own work. Set only by
+    # scripts/set_category_images.py, via with_context(); any other write to
+    # image_1920 clears the flag in write() below, which is what protects a
+    # picture the client uploaded by hand.
+    _TECAS_AUTO_IMAGE_CTX = 'tecas_auto_image'
+
     @api.model
     def _tecas_refresh_website(self):
         """Called from views/products_menu.xml on install and on every upgrade.
@@ -281,6 +317,12 @@ class ProductPublicCategory(models.Model):
         return records
 
     def write(self, vals):
+        # A picture that arrives from anywhere other than the image script
+        # belongs to whoever put it there. Recording that here — rather than
+        # trusting the script to know — is what makes the protection hold for
+        # an upload through the backend, an import, or the website editor.
+        if 'image_1920' in vals and not self.env.context.get(self._TECAS_AUTO_IMAGE_CTX):
+            vals = dict(vals, tecas_image_is_auto=False)
         result = super().write(vals)
         if self._TECAS_WATCHED.intersection(vals):
             _schedule(self.env)

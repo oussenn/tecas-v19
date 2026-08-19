@@ -62,6 +62,14 @@ class ProductPublicCategory(models.Model):
              "laisser décochée partout ailleurs.",
         default=False,
     )
+    tecas_image_is_auto = fields.Boolean(
+        string="Image choisie automatiquement",
+        help="Cochée quand l'image de la catégorie a été reprise d'un produit "
+             "par scripts/set_category_images.py. Une image déposée à la main "
+             "décoche cette case et n'est plus jamais remplacée par le script.",
+        default=False,
+        copy=False,
+    )
     tecas_hide_from_website = fields.Boolean(
         string="Masquer du site",
         help="Retire la catégorie du site — menu, page d'accueil, colonne de "

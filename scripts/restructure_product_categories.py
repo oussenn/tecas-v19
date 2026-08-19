@@ -272,7 +272,14 @@ DROP_INTO_PARENT = [
 # "Équipements & Solutions Énergétiques" is hidden rather than deleted: its four
 # sub-categories now hang off Accessoires Solaires, so the family itself is
 # empty, but keeping the record means the decision is one checkbox to undo.
-HIDDEN_FROM_WEBSITE = ('Promo', 'Équipements & Solutions Énergétiques')
+HIDDEN_FROM_WEBSITE = (
+    'Promo',
+    'Équipements & Solutions Énergétiques',
+    # Never part of the client's ten families. It only appeared in the menu
+    # because a water heater was published, which made it browsable and gave
+    # the panel an eleventh family on a third row.
+    'Chauffe-eau Solaires',
+)
 
 # Families outside the client's plan. They keep their place; only their shouted
 # names are brought in line with the ten above.
