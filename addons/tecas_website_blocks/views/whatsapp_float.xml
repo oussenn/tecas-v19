@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!--
+    The WhatsApp button, moved out of the header.
+
+    It used to be the header's call to action, where it competed with the menu
+    for the one spot a visitor reads first; that spot now says "Contactez-Nous"
+    and leads to the quote form (see scripts/header_contact_button.py). WhatsApp
+    is a chat channel, so it belongs where a visitor already looks for one: a
+    round green button pinned to the bottom-left corner, beside the site's chat
+    bubble.
+
+    It hangs outside #wrapwrap on purpose. Inside it, a page that creates a
+    stacking context — any section with a transform, which the animated blocks
+    have — would trap a fixed-position child and scroll it away with the page.
+
+    The number is the same one the header button dialled. It is written here
+    rather than read from a setting because there is nowhere in Odoo that
+    holds "the WhatsApp number the website should offer"; res.company.mobile is
+    the company's phone, which is not the same thing and would silently change
+    the destination the day someone corrects it in Settings.
+-->
+<template id="tecas_whatsapp_float" inherit_id="website.layout"
+          name="Bouton WhatsApp flottant">
+    <xpath expr="//div[@id='wrapwrap']" position="after">
+        <a href="https://api.whatsapp.com/send/?phone=212664276055&amp;text&amp;type=phone_number&amp;app_absent=0"
+           class="tecas_wa_float" target="_blank" rel="noopener noreferrer"
+           title="Contactez-nous sur WhatsApp"
+           aria-label="Contactez-nous sur WhatsApp">
+            <i class="fa fa-whatsapp" aria-hidden="true"/>
+        </a>
+    </xpath>
+</template>
+
+</odoo>

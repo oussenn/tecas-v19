@@ -10,10 +10,12 @@ drop: views/shop_filters.xml scopes the shop's attribute filters to the
 category being browsed, views/products_menu.xml supplies the panel that
 models/tecas_autosync.py stores in the "Nos Produits" mega menu, the
 tecas_show_when_empty flag on product.public.category lets a family be browsed
-before its products are published, and the two SCSS files dress the top menu
-(header) and shrink the sub-category strip on category pages (shop).
+before its products are published, views/whatsapp_float.xml pins the WhatsApp
+button to the corner of every page, and the SCSS files dress the top menu
+(header), shrink the sub-category strip on category pages (shop) and place the
+floating button (floating).
 """,
-    'version': '19.0.35.0.0',
+    'version': '19.0.36.0.0',
     'depends': ['website', 'website_sale', 'website_blog'],
     'data': [
         'views/snippets/s_tecas_hero.xml',
@@ -31,6 +33,7 @@ before its products are published, and the two SCSS files dress the top menu
         'views/snippets/s_tecas_brands.xml',
         'views/snippets/snippets.xml',
         'views/products_menu.xml',
+        'views/whatsapp_float.xml',
         'views/shop_filters.xml',
         'views/shop_filmstrip.xml',
         'views/shop_prices_login.xml',
@@ -40,6 +43,7 @@ before its products are published, and the two SCSS files dress the top menu
             'tecas_website_blocks/static/src/scss/blocks.scss',
             'tecas_website_blocks/static/src/scss/header.scss',
             'tecas_website_blocks/static/src/scss/shop.scss',
+            'tecas_website_blocks/static/src/scss/floating.scss',
             'tecas_website_blocks/static/src/js/carousel.js',
         ],
     },

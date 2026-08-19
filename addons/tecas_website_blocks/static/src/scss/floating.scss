@@ -1,0 +1,66 @@
+// The floating WhatsApp button — see views/whatsapp_float.xml for why it is
+// there at all rather than in the header.
+
+.tecas_wa_float {
+    position: fixed;
+    // Bottom LEFT: Odoo's chat bubble starts bottom-right (see chat_hub.js,
+    // which sets bottom/right and leaves top/left unset), so the two channels
+    // sit one to a corner and neither covers the other. A visitor who has
+    // dragged the bubble across can drag it back — right-click gives it a
+    // "Reset initial position".
+    left: 18px;
+    bottom: 18px;
+    // Above the page, below the chat widget: its root sets z-index to
+    // calc(9e999), so nothing here can bury it.
+    z-index: 1035;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    // WhatsApp's own green, not the theme's: this button is recognised by its
+    // colour before it is read, and a house-green version of it stops being a
+    // WhatsApp button and becomes an unexplained green circle.
+    background: #25D366;
+    color: #fff;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+    .fa {
+        font-size: 30px;
+        line-height: 1;
+    }
+
+    &:hover,
+    &:focus {
+        color: #fff;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
+    }
+
+    // Fixed elements sit over the editor's canvas and over a printed page,
+    // where a button is only ever in the way.
+    .editor_enable & {
+        display: none;
+    }
+
+    @media print {
+        display: none;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .tecas_wa_float {
+        left: 14px;
+        bottom: 14px;
+        width: 50px;
+        height: 50px;
+
+        .fa {
+            font-size: 27px;
+        }
+    }
+}
