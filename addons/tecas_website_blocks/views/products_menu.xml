@@ -40,7 +40,16 @@
                  stays readable for any count in between. -->
             <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5">
                 <div t-foreach="groups" t-as="group" class="s_tecas_pm_col">
-                    <a t-att-href="group['url']" class="s_tecas_pm_title" t-out="group['name']"/>
+                    <!-- The family's picture rides in the title row, so it
+                         stands in front of the name and above the rule that
+                         underlines the whole heading. alt is empty on purpose:
+                         the name is right beside it, and a screen reader
+                         announcing it twice is noise, not information. -->
+                    <a t-att-href="group['url']" class="s_tecas_pm_title">
+                        <img t-if="group['image']" t-att-src="group['image']" alt=""
+                             class="s_tecas_pm_icon" loading="lazy"/>
+                        <span t-out="group['name']"/>
+                    </a>
                     <nav t-if="group['children']" class="s_tecas_pm_list">
                         <a t-foreach="group['children']" t-as="child"
                            t-att-href="child['url']" class="s_tecas_pm_link" t-out="child['name']"/>

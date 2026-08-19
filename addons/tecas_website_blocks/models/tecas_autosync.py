@@ -220,6 +220,10 @@ def _menu_groups(env):
         groups.append({
             'name': (root.name or '').strip(),
             'url': '/shop/category/%s' % slug(root),
+            # The family's own picture, at thumbnail size, for the chip in
+            # front of its name. False when the category has nothing to show —
+            # the template then prints the name alone rather than a frame.
+            'image': root._tecas_tile_image(size=128),
             'children': [{'name': (c.name or '').strip(),
                           'url': '/shop/category/%s' % slug(c)}
                          for c in children if browsable(c)],

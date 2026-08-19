@@ -136,7 +136,7 @@ class ProductPublicCategory(models.Model):
 
         return (ordered + rest)[:limit]
 
-    def _tecas_tile_image(self):
+    def _tecas_tile_image(self, size=512):
         """Image url for this category's tile, or False if it has none.
 
         A category rarely carries its own picture, so the catalogue supplies
@@ -144,17 +144,22 @@ class ProductPublicCategory(models.Model):
         all. The `image_512 != False` clause is what makes that work — picking
         the first published product outright, as this used to, hands back a
         blank frame whenever that product happens to have no photo.
+
+        `size` picks which of the image.mixin resolutions to link to. The
+        homepage tile is a photo and wants 512; the menu shows the same picture
+        at 27px, and asking for 512 there would put ten full-size images behind
+        a dropdown that most visits never open.
         """
         self.ensure_one()
-        if self.image_512:
-            return '/web/image/product.public.category/%s/image_512' % self.id
+        if self[f'image_{size}']:
+            return '/web/image/product.public.category/%s/image_%s' % (self.id, size)
 
         Product = self.env['product.template'].sudo()
         has_image = [('public_categ_ids', 'child_of', self.id),
                      ('image_512', '!=', False)]
         product = (Product.search(has_image + [('is_published', '=', True)], limit=1)
                    or Product.search(has_image, limit=1))
-        return '/web/image/product.template/%s/image_512' % product.id if product else False
+        return '/web/image/product.template/%s/image_%s' % (product.id, size) if product else False
 
     @api.model
     def _tecas_category_revenue(self, category_ids):

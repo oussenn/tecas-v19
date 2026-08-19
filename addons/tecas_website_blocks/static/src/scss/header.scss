@@ -82,7 +82,12 @@ header #top_menu .dropdown-menu {
     // !important needed, and none wanted: the client must still be able to
     // restyle the panel from the editor.
     a.s_tecas_pm_title:not(.btn) {
-        display: block;
+        // A row, so the family's thumbnail can sit in front of the name and
+        // still be part of the heading — the rule below is the link's own
+        // border, so anything inside the link is above it by construction.
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
         margin-bottom: 0.6rem;
         padding-bottom: 0.5rem;
         border-bottom: 2px solid color-mix(in srgb, var(--tecas-ink) 12%, #fff);
@@ -95,7 +100,10 @@ header #top_menu .dropdown-menu {
         // Two lines' worth even when the name needs one, so every rule and
         // every list in a row starts on the same baseline — "Éclairage
         // Solaire" next to "Structures & Fixations Solaires" otherwise sets
-        // its column half a line higher than its neighbours.
+        // its column half a line higher than its neighbours. It also has to
+        // stay taller than the thumbnail, or a one-line family would push its
+        // own rule down and break the very alignment it buys: 2 * 1.3 * 1.02rem
+        // is 42px against the chip's 27px.
         @media (min-width: 992px) {
             min-height: 1.02rem * 1.3 * 2;
         }
@@ -104,7 +112,32 @@ header #top_menu .dropdown-menu {
         &:focus {
             border-bottom-color: var(--tecas-orange);
             color: var(--tecas-blue);
+
+            .s_tecas_pm_icon {
+                border-color: color-mix(in srgb, var(--tecas-orange) 45%, #fff);
+            }
         }
+    }
+
+    // The family's thumbnail. Small on purpose: it is there to make the ten
+    // families scannable by shape, not to show the product off — that is what
+    // the homepage tiles and the category pages are for.
+    .s_tecas_pm_icon {
+        // Never squeezed by a long family name, and never stretched by a
+        // photo that is not square.
+        flex: 0 0 auto;
+        width: 1.7rem;
+        height: 1.7rem;
+        padding: 1px;
+        border: 1px solid color-mix(in srgb, var(--tecas-ink) 12%, #fff);
+        border-radius: 6px;
+        // Catalogue photos are shot on white and the panel is white: without
+        // the hairline above, half of them would float with no edge at all.
+        background: #fff;
+        // contain, not cover: a panel cropped to a square stops looking like a
+        // panel. Better a little air around it than an unrecognisable slice.
+        object-fit: contain;
+        transition: border-color 0.15s ease;
     }
 
     .s_tecas_pm_list {
