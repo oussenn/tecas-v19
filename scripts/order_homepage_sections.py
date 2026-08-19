@@ -32,12 +32,12 @@ ORDER = {
 
 View = env['ir.ui.view'].sudo()
 langs = env['res.lang'].sudo().with_context(active_test=True).search([]).mapped('code') or ['en_US']
-# Source language first, purely for a readable log. Order does NOT matter and
-# must not be made to: arch_db keeps a complete, independent arch per language,
-# so each pass below reads and writes one language and touches no other. The
-# belief that writing en_US "regenerates" the rest is what let an earlier
-# version of models/tecas_autosync.py overwrite the client's French homepage
-# with a stale English copy.
+# Source language first: writing arch_db in it DOES re-derive the others (a
+# marker written into en_US shows up in fr_FR immediately), so any other order
+# would have the later writes undone a moment after. Better still is not to
+# write a language the website does not serve at all — see _website_langs in
+# models/tecas_autosync.py, which is what stops this site's French pages being
+# rebuilt from an English copy no editor ever updates.
 langs = sorted(set(langs), key=lambda code: code != 'en_US')
 
 report = []

@@ -1,4 +1,5 @@
 import hashlib
+import html
 import logging
 
 from lxml import etree
@@ -22,7 +23,7 @@ AUTO_SIG = 'data-tecas-sig'
 # Prefix on that fingerprint, so the way it is computed can change without
 # every existing block reading as hand-edited: a stamp that does not carry the
 # current prefix is treated as unstamped, adopted and stamped afresh.
-SIG_VERSION = 'v3'
+SIG_VERSION = 'v4'
 # arch_db holds a COMPLETE, INDEPENDENT arch per language — it is jsonb keyed
 # by language, not a source plus a table of translated terms. Two consequences,
 # both learned the hard way:
@@ -38,6 +39,15 @@ SIG_VERSION = 'v3'
 # paragraph, none of which were in blocks this module owns. Every language is
 # now read, rewritten and saved on its own, and no language is ever written
 # from another's content.
+#
+# There is a second trap behind the first, and it is the one that kept bringing
+# the typo back in the hero: writing the arch IN THE SOURCE LANGUAGE re-derives
+# every other language from it. Proven on the live page by writing a marker
+# into en_US and watching it appear in fr_FR a moment later. So on a site that
+# serves French only — which this one does, see _website_langs — the English
+# arch must never be written at all: nobody reads it, no editor updates it, and
+# every write of it rebuilds the French page from a copy that is months stale.
+SOURCE_LANG = 'en_US'
 PRODUCTS_MENU_URL = '/shop'
 PRODUCTS_MENU_PARAM = 'tecas.products_menu_id'
 SHOP_LABEL = 'Toute la boutique'
@@ -65,6 +75,22 @@ def _installed_langs(env):
     """
     codes = env['res.lang'].sudo().with_context(active_test=True).search([]).mapped('code')
     return codes or ['en_US']
+
+
+def _website_langs(env):
+    """The languages the site actually SERVES, source language first.
+
+    Not the same thing as the languages installed in the database: en_US is
+    installed here (Odoo needs it as the source of every translated field) but
+    website.language_ids holds French alone, so English is never served and
+    must never be written — see the note by SOURCE_LANG.
+
+    Source first because writing it re-derives the others: any language written
+    before it would be silently undone a moment later.
+    """
+    codes = env['website'].sudo().search([]).language_ids.mapped('code')
+    return sorted(set(codes) or set(_installed_langs(env)),
+                  key=lambda code: code != SOURCE_LANG)
 
 
 def _has_published_product(env, categ):
@@ -100,6 +126,18 @@ def _relevant_categories(env):
     ).filtered(lambda c: _is_browsable(env, c))
 
 
+def _plain(text):
+    """Text as it READS, whatever level of escaping it is written at.
+
+    Unescaped repeatedly: one pass turns &amp;amp; into &amp;, and it is the
+    fully-resolved form that has to be compared.
+    """
+    previous = None
+    while text != previous:
+        previous, text = text, html.unescape(text)
+    return text
+
+
 def _signature(node):
     """Fingerprint of what a section SAYS, not of how it is written down.
 
@@ -124,6 +162,13 @@ def _signature(node):
     clone = etree.fromstring(etree.tostring(node))
     parts = []
     for element in clone.iter():
+        # `&` survives a page's lifetime at more than one level of escaping —
+        # "Coffrets & Protections Électriques" is stored as &amp; by the editor
+        # and comes back &amp;amp; from a copy that has been through an arch
+        # rewrite. It renders the same, so it must hash the same: comparing the
+        # raw form declared two of the client's own category tiles hand-edited
+        # and froze the block for good, which is the failure this stamp exists
+        # to avoid.  (see _plain)
         # Comments and processing instructions carry a callable as their tag,
         # and its repr holds a memory address — different in every process, so
         # a block with a comment in it would never match its own stamp again.
@@ -131,8 +176,9 @@ def _signature(node):
             continue
         parts.append(element.tag)
         if element is not clone:
-            parts.extend('%s=%s' % pair for pair in sorted(element.attrib.items()))
-        text = ' '.join((element.text or '').split())
+            parts.extend('%s=%s' % (name, _plain(value))
+                         for name, value in sorted(element.attrib.items()))
+        text = _plain(' '.join((element.text or '').split()))
         if text:
             parts.append(text)
     digest = hashlib.sha1('\x00'.join(parts).encode('utf-8')).hexdigest()[:16]
@@ -243,7 +289,7 @@ def _refresh_auto_blocks(env):
     if not page_view_ids:
         return 0
     return sum(_refresh_auto_blocks_lang(env, lang, page_view_ids)
-               for lang in _installed_langs(env))
+               for lang in _website_langs(env))
 
 
 def _menu_groups(env):
@@ -316,7 +362,7 @@ def _sync_products_menu(env):
     # One render per language: the panel is mostly markup, but the family names
     # inside it are translatable, and mega_menu_content is a translated field.
     # Writing a single render would stamp one language over all of them.
-    for lang in _installed_langs(env):
+    for lang in _website_langs(env):
         env_lang = env(context=dict(env.context, lang=lang))
         content = str(env_lang['ir.qweb']._render(PRODUCTS_MENU_TEMPLATE, {
             'groups': _menu_groups(env_lang),
