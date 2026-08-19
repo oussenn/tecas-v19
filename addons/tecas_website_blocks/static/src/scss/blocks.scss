@@ -1096,8 +1096,19 @@
 
     // Carousel mode: the row no longer scrolls, it is driven by transform.
     // A scrollbar under a pair of arrows is two controls for one job.
+    //
+    // The side padding is the arrows' own lane. They cannot simply be hung
+    // outside the container: it clips its overflow to drive the carousel, so
+    // anything at its edge loses its shadow to that clip — and anything past
+    // the edge disappears. Widening the padding moves the cards inward
+    // instead, which leaves the arrows clear of them AND far enough from the
+    // clip that their shadow is drawn in full.
+    //
+    // The value has to cover the inset, the button and a gap; see the arrow
+    // rules below, and keep the two in step.
     &.s_tecas_carousel_ready {
         overflow: hidden;
+        padding-inline: 4.25rem;
 
         > .row {
             overflow: visible;
@@ -1106,6 +1117,10 @@
             &::-webkit-scrollbar {
                 display: none;
             }
+        }
+
+        @media (max-width: 767.98px) {
+            padding-inline: 3.6rem;
         }
     }
 
@@ -1126,7 +1141,10 @@
         border: 1px solid color-mix(in srgb, var(--tecas-ink) 12%, #fff);
         border-radius: 50%;
         background: #fff;
-        box-shadow: 0 6px 18px color-mix(in srgb, var(--tecas-ink) 18%, transparent);
+        // Kept tighter than the block's other shadows on purpose: the blur
+        // radius is how far the shadow reaches towards the clip edge, so a
+        // soft one would need the arrows pushed further into the cards.
+        box-shadow: 0 4px 12px color-mix(in srgb, var(--tecas-ink) 20%, transparent);
         color: var(--tecas-ink);
         font-size: 1.6rem;
         line-height: 1;
@@ -1139,13 +1157,30 @@
         }
     }
 
-    // Inside the viewport on both edges: the container clips its own overflow
-    // in carousel mode, so an arrow hung outside it would be cut in half.
+    // Inset by more than the shadow's blur radius (12px), so the shadow ends
+    // before the container's clip edge does. Any smaller and it is shaved off
+    // down the outer side.
     .s_tecas_carousel_prev {
-        left: 0.25rem;
+        left: 0.9rem;
     }
 
     .s_tecas_carousel_next {
-        right: 0.25rem;
+        right: 0.9rem;
+    }
+
+    @media (max-width: 767.98px) {
+        .s_tecas_carousel_arrow {
+            width: 2.25rem;
+            height: 2.25rem;
+            font-size: 1.3rem;
+        }
+
+        .s_tecas_carousel_prev {
+            left: 0.8rem;
+        }
+
+        .s_tecas_carousel_next {
+            right: 0.8rem;
+        }
     }
 }
